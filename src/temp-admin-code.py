@@ -6,6 +6,9 @@ from time import sleep
 import time
 from hal import dht11
 import threading
+from hal import hal_lcd  # If your LCD code is in a file named lcd_driver.py
+lcd_display = hal_lcd.lcd()
+lcd_display.lcd_display_string("Enter code:".ljust(16), line=1)
 
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
@@ -25,39 +28,53 @@ ROW = [6, 20, 19, 13]
 COL = [12, 5, 16]
 
 VALID_CODE = "1234"
+code_valid = False
 entered_code = []
 
 # Globals
 cbk_func = None
 dht11_inst = None
 monitoring_started = False  # Flag to prevent restarting the thread
+code_valid == False
 
+# initialise slide switch and setup
 
 # --- DHT11 Setup ---
 def init_dht_sensor():
-    global dht11_inst
-    dht11_inst = dht11.DHT11(pin=21)
-
+     global dht11_inst
+     time.sleep(2)
+     dht11_inst = dht11.DHT11(pin=21)
+    # ----
 def read_temp_humidity():
-    time.sleep(2)
     global dht11_inst
+    sleep(2)
     result = dht11_inst.read()
-
+    print("Starting temperature monitoring...")
     if result.is_valid():
         temperature = result.temperature
         humidity = result.humidity
-        print(f"\nTemperature: {temperature:.1f}°C, Humidity: {humidity:.1f}%")
-        if temperature < 1.6 or temperature > 4.4:
-            print("Temperature out of safe range!")
-        return [temperature, humidity]
-    else:
-        print("Failed to read from DHT11 sensor.")
-        return [-100, -100]
+        sleep(1)
+        lcd_display.lcd_display_string(f"Temp: {temperature:.1f}C", line=1)
+        print(f"Temperature: {temperature:.1f}°C, Humidity: {humidity:.1f}%")
 
+        if temperature < 1.6 or temperature > 4.4:
+            lcd_display.lcd_display_string("WARNING!", line=2)
+            sleep(2)
+            lcd_display.lcd_display_string(" " * 16, line=2)
+        else:
+            lcd_display.lcd_display_string(" " * 16, line=2)  # Clear warning
+
+        return [temperature, humidity]
+
+    else:
+        print("Sensor read fail")
+        lcd_display.lcd_display_string("Sensor read fail", line=2)
+        return [-100, -100]
+    
 def monitor_temp_continuously():
     while True:
         read_temp_humidity()
-        sleep(5)
+        sleep(2)
 
 
 # --- Keypad Setup ---
@@ -85,61 +102,70 @@ def get_key():
             GPIO.output(COL[i], 1)
 
 # --- Servo and Sensor Start ---
-def actuate_servo_and_start_monitor():
-    global monitoring_started
-
-    print("\nAccess Granted: Opening door...")
-    servo_pwm.ChangeDutyCycle(7)
-    sleep(2)
+def actuate_servo():
+    servo_pwm.ChangeDutyCycle(8)
+    sleep(1)
     servo_pwm.ChangeDutyCycle(0)
+    sleep(3)
+    servo_pwm.ChangeDutyCycle(2)
+    sleep(2)
 
-    if not monitoring_started:
-        print("Starting continuous temperature monitoring...")
-        monitoring_started = True
-        thread = threading.Thread(target=monitor_temp_continuously, daemon=True)
-        thread.start()
-
+      # Clear again to prepare for temp display after door opens
+    lcd_display.lcd_clear()
+    
+    # Start temperature monitoring thread (daemon=True so it stops on program exit)
+    threading.Thread(target=monitor_temp_continuously, daemon=True).start()
 
 # --- Keypad Handling ---
 def on_key_press(key):
-    global entered_code
+    global entered_code,code_valid
+
+    if code_valid:
+        return
 
     if key == '#':
-        entered_code_str = ''.join(map(str, entered_code))
-        if entered_code_str == VALID_CODE:
-            actuate_servo_and_start_monitor()
+        code = ''.join(entered_code)
+        if code == VALID_CODE:
+            code_valid = True
+            lcd_display.lcd_clear()
+            lcd_display.lcd_display_string("Access Granted!", line=1)
+            sleep(2)
+            actuate_servo()
         else:
-            print("Wrong Code!")
-        entered_code = []
+            lcd_display.lcd_display_string("Wrong Code!", line=2)
+            sleep(2)
+            lcd_display.lcd_display_string("Enter code:", line=1)
+            lcd_display.lcd_display_string(" " * 16, line=2)  # clear second line
+            entered_code = []
 
     elif key == '*':
         entered_code = []
-        print("Code cleared")
+        lcd_display.lcd_display_string("Enter code:", line=1)
+        lcd_display.lcd_display_string(" " * 16, line=2)
 
-    else:
-        if str(key).isdigit():
+    elif str(key).isdigit():
+        if len(entered_code) < 4:  # Limit input to 4 digits
             entered_code.append(str(key))
-            print(f"\rEntered so far: {''.join(entered_code)}", end='', flush=True)
-
+            lcd_display.lcd_display_string(f"Enter code:{''.join(entered_code):<4}", line=1)
             if len(entered_code) == len(VALID_CODE):
-                entered_code_str = ''.join(entered_code)
-                if entered_code_str == VALID_CODE:
-                    actuate_servo_and_start_monitor()
-                else:
-                    print("Wrong Code!")
-                entered_code = []
+                on_key_press('#')  # Auto-submit
 
 
 # --- Start Program ---
 try:
-    init_dht_sensor()
-    time.sleep(2)  # allow sensor to stabilize
+    lcd_display.lcd_clear()
+    dht11_inst = dht11.DHT11(pin=21)
+    time.sleep(2)
     init_keypad(on_key_press)
-    print("Enter code on keypad:")
+    lcd_display.lcd_display_string("Enter code:".ljust(16), line=1)
     get_key()
 
+   
+        
+    
+
 except KeyboardInterrupt:
-    print("\nCleaning up GPIO...")
+    print("\nPowering down...")
 finally:
     servo_pwm.stop()
     GPIO.cleanup()

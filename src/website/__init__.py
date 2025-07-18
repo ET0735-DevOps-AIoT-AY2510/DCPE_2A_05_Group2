@@ -16,8 +16,17 @@ def create_app():
     db.init_app(app)
 
     from .routes import directories
-
     app.register_blueprint(directories, url_prefix='/')
+
+    login_manager = LoginManager()
+    login_manager.login_view = 'directories.login'
+    login_manager.init_app(app)
+
+    # User Loader Function
+    from .models import User
+    @login_manager.user_loader
+    def load_user(user_id):
+        return User.query.get(int(user_id))
     
     return app
 

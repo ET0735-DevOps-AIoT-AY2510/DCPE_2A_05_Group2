@@ -36,13 +36,70 @@ def add_to_cart():
     flash(f'Added {quantity} {product.name} to cart!', 'success')
     return redirect(url_for('directories.home'))
 
+# Clear Cart on Payment 
+@directories.route('/cart/clear', methods=['POST'])
+@login_required
+def clear_cart():
+    Order.query.filter_by(user_id=current_user.id).delete()
+    db.session.commit()
+    flash('Payment Successful! ', 'success')
+    return redirect(url_for('directories.payment_success'))
+
+# Update Quantity Route
+@directories.route('/cart/update-quantity', methods=['POST'])
+@login_required
+def update_quantity():
+    order_id = request.form.get('order_id')
+    action = request.form.get('action')
+    order = Order.query.get(order_id)
+
+    if not order or order.user_id != current_user.id:
+        flash('Order not found.', 'error')
+        return redirect(url_for('directories.view_cart'))
+    
+    product = Product.query.get(order.product_id)
+    product_name = product.name if product else 'Item'
+    
+    if action == 'increase':
+        order.quantity += 1
+        db.session.commit()
+        flash(f'Increased quantity of {product_name}!', 'success')
+
+    elif action == 'decrease':
+        if order.quantity > 0:
+            order.quantity -= 1
+            db.session.commit()
+            flash(f'Decreased quantity of {product_name}!', 'success')
+
+        else:
+            flash('Quantity cannot be less than 1', 'error')
+
+    elif action == 'delete':
+        db.session.delete(order)
+        db.session.commit()
+        flash(f'Removed {product_name} from your cart!', 'success')
+
+    return redirect(url_for('directories.view_cart'))
+
 
 
 # This is for the homepage -> To see which drinks are available to buy
 @directories.route('/', methods=['GET', 'POST']) 
 def home():
-    products = Product.query.all() # Gets all the product from the database
-    return render_template("home.html", products=products)
+    search_query = request.args.get('search', '').strip()
+
+    if search_query:
+        products = Product.query.filter(Product.name.ilike(f'%{search_query}')).all()
+
+    else:
+        products = Product.query.all()
+
+    cart_count = 0
+
+    if current_user.is_authenticated:
+        orders = Order.query.filter_by(user_id=current_user.id).all()
+        cart_count = sum(order.quantity for order in orders)
+    return render_template("home.html", products=products, cart_count=cart_count, search_query=search_query)
 
 # This is for the users to view the cart
 @directories.route('/cart', methods=['GET', 'POST'])
@@ -50,9 +107,31 @@ def home():
 def view_cart():
     orders = Order.query.filter_by(user_id=current_user.id).all()
     cart_items = []
+    cart_total = 0
     for order in orders:
         product = Product.query.get(order.product_id)
 
+        if product:
+            item_total = product.price * order.quantity
+            cart_items.append({
+                'id': order.id,
+                'name': product.name,
+                'quantity': order.quantity,
+                'price': product.price
+            })
+
+            cart_total += item_total
+    return render_template("carts.html", cart_items=cart_items, cart_total=cart_total)
+
+# Checkout 
+@directories.route('/product-details', methods=['GET', 'POST'])
+@login_required
+def product_details():
+    orders = Order.query.filter_by(user_id=current_user.id).all()
+    cart_items = []
+
+    for order in orders:
+        product = Product.query.get(order.product_id)
         if product:
             cart_items.append({
                 'id': order.id,
@@ -60,12 +139,8 @@ def view_cart():
                 'quantity': order.quantity,
                 'price': product.price
             })
-    return render_template("carts.html", cart_items=cart_items)
-
-# Checkout 
-@directories.route('/product-details', methods=['GET', 'POST'])
-def product_details():
-    return render_template("product_details.html")
+    order_total = sum(item['price'] * item['quantity'] for item in cart_items)
+    return render_template("product_details.html", cart_items=cart_items, order_total=order_total)
 
 # Payment Success  
 @directories.route('/product-details/checkout', methods=['GET', 'POST'])

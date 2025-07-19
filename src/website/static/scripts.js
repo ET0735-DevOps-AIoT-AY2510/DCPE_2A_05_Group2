@@ -52,3 +52,38 @@ function validateForm() {
 
   return true; // Form is valid
 }
+
+// For the Checkout.html
+
+document.getElementById('paynowBtn').addEventListener('click', function () {
+  document.getElementById('qrCodeSection').classList.add('active-section');
+  document.getElementById('creditCardSection').classList.remove('active-section');
+});
+
+document.getElementById('creditCardBtn').addEventListener('click', function () {
+  document.getElementById('creditCardSection').classList.add('active-section');
+  document.getElementById('qrCodeSection').classList.remove('active-section');
+});
+
+const flipCard = document.getElementById("flipCard");
+  flipCard.addEventListener("click", () => {
+    flipCard.classList.toggle("flipped");
+});
+
+// Status bar logic
+const statusText = document.getElementById("statusText");
+
+// Simulated status changes (replace with real backend/hardware signals)
+const statusBox = document.getElementById("statusBox");
+
+// Step 1: Change to "Dispensing Drink" with yellow background
+setTimeout(() => {
+    statusBox.textContent = "Status: Dispensing Drink";
+    statusBox.style.backgroundColor = "gold";
+}, 3000);
+
+// Step 2: Change to "Drink Dispensed" with green background
+setTimeout(() => {
+    statusBox.textContent = "Status: Drink Dispensed";
+    statusBox.style.backgroundColor = "seagreen";
+}, 6000);

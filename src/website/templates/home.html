@@ -10,15 +10,19 @@
         <span class="username ml-2">Hi, {{ current_user.name if current_user.is_authenticated else 'Guest' }}</span>
     </div>
 
-    <div class="search-container flex-grow-1 mx-3">
-        <input type="text" placeholder="Search..." class="form-control rounded-pill" />
-    </div>
+
+    <form action="{{ url_for('directories.home') }}" class="search-container flex-grow-1 mx-3">
+        <input type="text" name="search" value="{{ search_query|default('') }}" placeholder="Search drinks..." class="form-control rounded-pill" />
+    </form>
 
     <a href="{{ url_for('directories.view_cart') }}" class="cart-icon position-relative" style="text-decoration: none;">
         <img src="{{ url_for('static', filename='images/cart-icon.svg') }}" alt="Cart" style="width:24px; height:24px;">
-        <span class="cart-count position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-        2
-        </span>
+
+        {% if cart_count > 0 %}
+            <span class="cart-count position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                {{ cart_count }}
+            </span>
+        {% endif %}
 
     </a>
     <div class="cart-icon position-relative">

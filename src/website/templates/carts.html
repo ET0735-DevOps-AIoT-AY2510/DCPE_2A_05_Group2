@@ -21,7 +21,7 @@
             {% set total = 0 %}
             {% set grouped_items = {} %}
 
-            {# Group items by name #}
+            <!-- Group Items together -->
             {% for item in cart_items %}
               {% if grouped_items[item.name] %}
                 {% set _ = grouped_items[item.name].update({
@@ -37,13 +37,27 @@
                 <div>
                   <h5 class="mb-1">{{ name }}</h5>
                   <div class="d-flex align-items-center mt-2">
-                    <button class="minus-button btn btn-sm btn-outline-dark me-2"
-                      onclick="updateQuantity('{{ item.id }}', 'decrease')">−</button>
-                    <span class="quantity-of-drinks me-2 fw-bold">{{ item.quantity }}</span>
-                    <button class="add-button btn btn-sm btn-outline-dark me-3"
-                      onclick="updateQuantity('{{ item.id }}', 'increase')">+</button>
-                    <button class="remove-product btn btn-sm btn-outline-danger"
-                      onclick="removeItem('{{ item.id }}')">✕</button>
+                      <form action="/cart/update-quantity" style="display:inline;" method="POST">
+                        <input type="hidden" name="order_id" value="{{ item.id }}">
+                        <input type="hidden" name="action" value="decrease">
+                        <button type="submit" class="minus-button btn btn-sm btn-outline-dark me-2">−</button>
+                      </form>
+
+                      <span class="quantity-of-drinks me-2 fw-bold">{{ item.quantity }}</span>
+
+                      <form action="/cart/update-quantity" style="display:inline;" method="POST">
+                        <input type="hidden" name="order_id" value="{{ item.id }}">
+                        <input type="hidden" name="action" value="increase">
+                        <button type="submit" class="add-button btn btn-sm btn-outline-dark me-3">+</button>
+                      </form>
+
+                      <form action="/cart/update-quantity" style="display:inline;" method="POST" class="remove-product">
+                        <input type="hidden" name="order_id" value="{{ item.id }}">
+                        <input type="hidden" name="action" value="delete">
+                        <button type="submit" class=" btn btn-sm btn-outline-danger">✕</button>
+                      </form>
+
+
                   </div>
                 </div>
                 <div class="text-end">
@@ -57,9 +71,17 @@
 
           <!-- Total Section -->
           <div class="card-footer text-end">
-            <h4 class="mb-0">Total: ${{ "%.2f"|format(total) }}</h4>
+            <h4 class="mb-0">Total: ${{ "%.2f"|format(cart_total) }}</h4>
           </div>
         </div>
+
+        <!-- Product Details Button -->
+        <div class="text-center mt-4">
+          <a href="/product-details" class="btn btn-primary">
+            View Product Details
+          </a>
+        </div>
+
       </div>
     </div>
   {% else %}

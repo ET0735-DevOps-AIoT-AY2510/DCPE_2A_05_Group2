@@ -7,6 +7,8 @@ from . import db
 import json
 from .models import Product, User, Order
 from werkzeug.security import generate_password_hash
+import qrcode # For QR Code generation
+import os 
 
 from flask_login import login_required, current_user
 
@@ -42,8 +44,8 @@ def add_to_cart():
 def clear_cart():
     Order.query.filter_by(user_id=current_user.id).delete()
     db.session.commit()
-    flash('Payment Successful! ', 'success')
-    return redirect(url_for('directories.payment_success'))
+    flash('Your cart has been cleared ', 'success')
+    return redirect(url_for('directories.home'))
 
 # Update Quantity Route
 @directories.route('/cart/update-quantity', methods=['POST'])
@@ -144,14 +146,30 @@ def product_details():
 
 # Payment Success  
 @directories.route('/product-details/checkout', methods=['GET', 'POST'])
-def checkout():
+def checkout():    
     return render_template("checkout.html")
 
 
 # Payment Success  
 @directories.route('/product-details/payment-success', methods=['GET', 'POST'])
 def payment_success():
-    return render_template("payment_success.html")
+    # Data for QR code: user id and order ids
+    orders = Order.query.filter_by(user_id=current_user.id).all()
+    order_ids = [str(order.id) for order in orders]
+    qr_data = f"user_id:{current_user.id};orders:{','.join(order_ids)}"
+
+    # Ensure the qr_images folder exist 
+    qr_folder = os.path.join('website', 'static', 'images', 'qr_images')
+    os.makedirs(qr_folder, exist_ok=True)
+
+    qr_filename = f"user_{current_user.id}_qr.png"
+    qr_path = os.path.join(qr_folder, qr_filename)
+    qrcode.make(qr_data).save(qr_path)
+
+    # Pass the relative path from static to URL for
+    qr_url = f"images/qr_images/{qr_filename}"
+
+    return render_template("payment_success.html", qr_filename=qr_url)
 
 # Login Information
 @directories.route('/login', methods=['GET', 'POST'])

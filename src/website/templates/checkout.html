@@ -13,11 +13,11 @@
     <h2 class="text-center text-primary fw-bold mb-4">💳 Payment Methods</h2>
 
     <div class="payment-methods">
-        <button id="paynowBtn" class="btn btn-outline-primary">PayNow</button>
+        <button id="paynowBtn" class="btn btn-outline-primary">PayLah</button>
         <button id="creditCardBtn" class="btn btn-outline-primary">Credit Card</button>
     </div>
 
-    <!-- PayNow QR Code -->
+    <!-- PayLah QR Code -->
     <div id="qrCodeSection" class="qr-code text-center">
         <p class="mb-3 text-muted">Scan this QR code using your banking app:</p>
         <img src="{{ url_for('static', filename='images/paylah_qr.png') }}" alt="PayNow QR" class="img-fluid" style="max-width: 300px;">
@@ -42,11 +42,11 @@
     </div>
 
     <div class="text-center mt-4">
-        <form action="/cart/clear" method="POST">
+        <a href="/product-details/payment-success">
             <button class="btn btn-primary btn-lg px-5 shadow-sm" type="submit">
                 Pay
             </button>
-        </form>
+        </a>
     </div>
 
 </div>

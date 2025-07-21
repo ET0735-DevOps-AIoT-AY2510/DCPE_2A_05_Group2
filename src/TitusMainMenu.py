@@ -6,6 +6,10 @@ import queue
 from hal import hal_keypad as keypad
 from hal import hal_lcd as LCD
 import TitusRFID as payment
+import power_mode as power
+
+# Variables
+shutdown = False
 
 # Dictionary
 Vending_Drinks = {
@@ -67,41 +71,45 @@ def get_key_input(prompt=""):
 # Main program loop
 def main():
     start()
+    power_mode = threading.Thread(target=power, daemon=True).start()
     while True:
-        print("\nAvailable items:")
-        for num, item in item_list.items():
-            print(f"{num}. {item} - ${Vending_Drinks[item]:.2f}")
+        while power_mode:
+            print("\nAvailable items:")
+            for num, item in item_list.items():
+                print(f"{num}. {item} - ${Vending_Drinks[item]:.2f}")
 
-        Keyvalue = get_key_input("Please select a drink (1-9) or 0 to shutdown:")
-        if Keyvalue == 0:
-            print("Shutting down...")
-            break
-
-        if Keyvalue not in item_list:
-            print("Invalid selection.")
-            continue
-
-        selected_item = item_list[Keyvalue]
-        print(f"You selected {selected_item} (${Vending_Drinks[selected_item]:.2f})")
-        print("Would you like to continue?")
-        print("# - Continue\n* - Back\n0 - Shutdown")
-
-        decision = get_key_input("Your choice:")
-        if decision == "*":
-            continue
-        elif decision == "#":
-            paid = payment.payment()
-            if paid == False:
-                print("Invalid payment, restarting...")
-                continue
-            elif paid == True:
-                print("Successful payment, please collect your drink.")
+            Keyvalue = get_key_input("Please select a drink (1-9) or 0 to shutdown:")
+            if Keyvalue == 0:
+                print("Shutting down...")
                 break
-        elif decision == 0:
-            print("Shutting down...")
+
+            if Keyvalue not in item_list:
+                print("Invalid selection.")
+                continue
+
+            selected_item = item_list[Keyvalue]
+            print(f"You selected {selected_item} (${Vending_Drinks[selected_item]:.2f})")
+            print("Would you like to continue?")
+            print("# - Continue\n* - Back\n0 - Shutdown")
+
+            decision = get_key_input("Your choice:")
+            if decision == "*":
+                continue
+            elif decision == "#":
+                paid = payment.payment()
+                if paid == False:
+                    print("Invalid payment, restarting...")
+                    continue
+                elif paid == True:
+                    print("Successful payment, please collect your drink.")
+                    break
+            elif decision == 0:
+                print("Shutting down...")
+                break
+            else:
+                print("Invalid option, returning to menu.")
+        if shutdown:
             break
-        else:
-            print("Invalid option, returning to menu.")
 
 if __name__ == '__main__':
     main()

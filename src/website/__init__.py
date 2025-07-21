@@ -15,8 +15,13 @@ def create_app():
     app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{DB_NAME}'
     db.init_app(app)
 
+    # Register the user interface app
     from .routes import directories
-    app.register_blueprint(directories, url_prefix='/')
+    app.register_blueprint(directories)
+
+    # Register the staff interface app
+    from .staff_routes import staff_directories
+    app.register_blueprint(staff_directories)
 
     login_manager = LoginManager()
     login_manager.login_view = 'directories.login'

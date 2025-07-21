@@ -6,13 +6,11 @@ from flask_login import login_required, current_user, login_user, logout_user
 from . import db
 import json
 from .models import Product, User, Order
-from werkzeug.security import generate_password_hash
+from werkzeug.security import generate_password_hash # For security
 import qrcode # For QR Code generation
 import os 
 
-from flask_login import login_required, current_user
-
-directories = Blueprint('directories', __name__)
+directories = Blueprint('directories', __name__, url_prefix='/')
 
 # Add to Cart route
 @directories.route('/add-to-cart', methods=['POST'])

@@ -156,7 +156,7 @@ def payment_success():
     # Data for QR code: user id and order ids
     orders = Order.query.filter_by(user_id=current_user.id).all()
     order_ids = [str(order.id) for order in orders]
-    qr_data = f"user_id:{current_user.id};orders:{','.join(order_ids)}"
+    qr_data = str(current_user.id)
 
     # Ensure the qr_images folder exist 
     qr_folder = os.path.join('website', 'static', 'images', 'qr_images')

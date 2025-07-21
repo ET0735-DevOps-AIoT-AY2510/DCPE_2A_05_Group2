@@ -36,7 +36,10 @@
         <div class="col-6 mb-4">
             <div class="card ratio-3x4 h-100">
                 <div class="ratio-box">
-                    <img src="{{ url_for('static', filename='images/default_drink_image.png') }}" alt="{{ product.name }}" class="img-fluid ratio-img">                
+                    <img 
+                    src="{{ url_for('static', filename='images/drink_images/' + product.name|lower|replace(' ', '_') + '.jpg') }}" 
+                    alt="{{ product.name }}" 
+                    class="img-fluid ratio-img">                
                 </div>
                 <div class="card-body d-flex flex-column">
                     <h5 class="card-title">{{ product.name }}</h5>

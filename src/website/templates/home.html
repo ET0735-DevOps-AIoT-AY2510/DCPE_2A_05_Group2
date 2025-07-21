@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %} Home {% endblock %}
+
+{% block content %} 
+<div class="top-bar d-flex align-items-center justify-content-between px-3 py-2">
+    <div class="user-info d-flex align-items-center">
+        <a href="/login">
+            <img src="{{ url_for('static', filename='images/user-icon.jpg') }}" alt="Profile" class="rounded-circle" style="width:32px; height:32px; object-fit: cover;">
+        </a>
+        <span class="username ml-2">Hi, {{ current_user.name if current_user.is_authenticated else 'Guest' }}</span>
+    </div>
+
+
+    <form action="{{ url_for('directories.home') }}" class="search-container flex-grow-1 mx-3">
+        <input type="text" name="search" value="{{ search_query|default('') }}" placeholder="Search drinks..." class="form-control rounded-pill" />
+    </form>
+
+    <a href="{{ url_for('directories.view_cart') }}" class="cart-icon position-relative" style="text-decoration: none;">
+        <img src="{{ url_for('static', filename='images/cart-icon.svg') }}" alt="Cart" style="width:24px; height:24px;">
+
+        {% if cart_count > 0 %}
+            <span class="cart-count position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                {{ cart_count }}
+            </span>
+        {% endif %}
+
+    </a>
+    <div class="cart-icon position-relative">
+    </div>
+</div>
+
+<div class="container mt-4">
+    <div class="row">
+        <!-- Repeat this col for each drink -->
+        {% for product in products %}
+        <div class="col-6 mb-4">
+            <div class="card ratio-3x4 h-100">
+                <div class="ratio-box">
+                    <img 
+                    src="{{ url_for('static', filename='images/drink_images/' + product.name|lower|replace(' ', '_') + '.jpg') }}" 
+                    alt="{{ product.name }}" 
+                    class="img-fluid ratio-img">                
+                </div>
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">{{ product.name }}</h5>
+                    <p class="card-text mb-1">Price: ${{ '%.2f'|format(product.price) }}</p>
+                    <p class="card-text text-muted mb-3">Stock left: {{ product.stock }}</p>
+                    
+                    <!-- Add the items into the database -->
+                    <form method="POST" action="{{ url_for('directories.add_to_cart') }}" class="d-flex flex-column">
+                        <input type="hidden" name="product_id" value="{{ product.id }}">
+                        <div class="d-flex align-items-center mb-3">
+                            <button class="btn btn-outline-secondary btn-sm" type="button" onclick="decrementQty(this)">−</button>
+                            <input type="text" name="quantity" readonly class="form-control form-control-sm mx-2 text-center" value="1" style="width: 50px;">
+                            <button class="btn btn-outline-secondary btn-sm" type="button" onclick="incrementQty(this)">+</button>
+                        </div>
+                        <button type="submit" class="btn btn-primary mt-auto">Add to Cart</button>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+        <!-- Repeat ends -->
+    </div>
+
+</div>
+
+
+{% endblock %}

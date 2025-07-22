@@ -5,6 +5,7 @@ import queue
 from hal import hal_rfid_reader as rfid_reader
 from hal import hal_ir_sensor as ir_sensor
 from hal import hal_buzzer as buzzer
+from hal import hal_input_switch as switch
 
 
 def monitor_door(paid, staff_access):
@@ -17,7 +18,8 @@ def monitor_door(paid, staff_access):
             buzzer.beep(0.5, 0.5, 10)
             time.sleep(2)
 
-        
+def inputswitch():
+    switch.init()
 
 def main():
     # Initialising the Hardware components and variable
@@ -25,11 +27,9 @@ def main():
     buzzer.init()
     paid = False
     staff_access = False
-
     # Initialising and Starting Threads
-    door_thread = Thread(target=monitor_door, args=(paid, staff_access), daemon=True)
-    door_thread.start()
-
+    door_thread = Thread(target=monitor_door, args=(paid, staff_access), daemon=True).start()
+    
     try:
         while True:
             time.sleep(1)

@@ -18,7 +18,7 @@ keypad.init(None)
 usonic.init()
 
 # State
-power_state = True
+power_state = False
 
 #High Power Mode
 def high_power_mode():
@@ -27,6 +27,7 @@ def high_power_mode():
         lcd_instance.backlight(1)
         print("High Power Mode activated")
         power_state = True
+    return power_state
 
 #Low Power Mode
 def low_power_mode():
@@ -35,6 +36,7 @@ def low_power_mode():
         lcd_instance.backlight(0)
         print("Low Power Mode activated")
         power_state = False
+    return power_state
 
 #Key detection 1
 def key_press_callback(key):

@@ -10,6 +10,9 @@ from werkzeug.security import generate_password_hash # For security
 import qrcode # For QR Code generation
 import os 
 
+# For hardware implementation
+from hardware_payment import scan_and_get_orders, process_order
+
 directories = Blueprint('directories', __name__, url_prefix='/')
 
 # Add to Cart route
@@ -167,7 +170,23 @@ def payment_success():
     # Pass the relative path from static to URL for
     qr_url = f"images/qr_images/{qr_filename}"
 
+    # order_list = scan_and_get_orders()
+
+    # process_order(order_list)
+
     return render_template("payment_success.html", qr_filename=qr_url)
+
+@directories.route('/product-details/payment-success/qr_scanning', methods=['GET', 'POST'])
+def qr_scan():
+
+    order_list = scan_and_get_orders()
+
+    process_order(order_list)
+
+    return redirect(url_for('directories.home'))
+
+
+
 
 # Login Information
 @directories.route('/login', methods=['GET', 'POST'])

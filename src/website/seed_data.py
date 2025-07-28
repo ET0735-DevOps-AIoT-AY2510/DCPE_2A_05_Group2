@@ -12,7 +12,7 @@ with app.app_context():
     p3 = Product(name="Sprite", price=2.00, stock=12)
 
     # Staff Data 
-    staff1 = Staff(name="chunho", password="i love devops")
+    staff1 = Staff(name="chunho", email="phangchunhoe2007@gmail.com", phone_number="87167758", password="i love devops")
 
     db.session.add_all([p1, p2, p3, staff1])
     db.session.commit()

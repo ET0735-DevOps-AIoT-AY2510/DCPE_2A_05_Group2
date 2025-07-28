@@ -57,6 +57,7 @@ def scan_and_get_orders():
     return None
 
 def process_order(order_list):
+    print(order_list)
     lcd = LCD.lcd()
     lcd.lcd_clear()
 

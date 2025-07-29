@@ -31,11 +31,17 @@
 
     <div class="message mt-4">Enjoy your drink! ☕</div>
 
-    <div id="statusBox" class="mt-3 fw-semibold fs-2 text-white text-center rounded py-2" style="background-color: orange;">
-        Status: Awaiting Reply from Vending Machine
-    </div>
-    <div class="thank-you">Thanks for using our vending machine. We hope to see you again soon!</div>
+    <form action="/product-details/payment-success/qr_scanning" method="GET">
+        <button 
+            id="qrScanBtn"
+            type="submit"
+            class="btn btn-primary mt-4 px-4 py-2 shadow"
+            style="border-radius: 12px; font-size: 1.1rem;"
+        >
+            📷 Proceed to QR Scan
+        </button>
+    </form>
+
 </div>
-<a href="/product-details/payment-success/qr_scanning">scan qr</a>
 
 {% endblock %}

@@ -5,6 +5,7 @@ import numpy as np
 from website.models import User, Order, Product
 from website import db
 from hal import hal_lcd as LCD
+import time
 
 
 
@@ -21,6 +22,7 @@ def scan_and_get_orders():
     while True:
         frame = picam2.capture_array()
         decoded_objects = decode(frame)
+        time.sleep(1)
         for obj in decoded_objects:
             qr_data = obj.data.decode('utf-8')
             print(f"QR Code Detected: {qr_data}")
@@ -28,8 +30,8 @@ def scan_and_get_orders():
             if len(points) == 4:
                 pts = np.array([[pt.x, pt.y] for pt in points], dtype=np.int32)
                 cv2.polylines(frame, [pts], True, (0, 255, 0), 2)
-            cv2.putText(frame, qr_data, (obj.rect.left, obj.rect.top - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+                cv2.putText(frame, qr_data, (obj.rect.left, obj.rect.top - 10),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
 
             # Query and return order list immediately
             try:
@@ -42,11 +44,13 @@ def scan_and_get_orders():
                         order_list.append({product.name: order.quantity})
                 cv2.destroyAllWindows()
                 picam2.stop()
+                del picam2
                 return order_list
             except Exception as e:
                 print(f"Error processing QR/user orders: {e}")
                 cv2.destroyAllWindows()
                 picam2.stop()
+                del picam2
                 return None
 
         cv2.imshow("QR Scanner", frame)
@@ -59,7 +63,26 @@ def scan_and_get_orders():
 def process_order(order_list):
     print(order_list)
     lcd = LCD.lcd()
-    lcd.lcd_clear()
-
     lcd.lcd_display_string("Dispensing", 1)
     lcd.lcd_display_string("drinks", 2)
+    time.sleep()
+
+
+    for order in order_list:
+        for key, value in order.items():
+            lcd.lcd_clear()
+            lcd.lcd_display_string("Dispensing", 1)
+            lcd.lcd_display_string(f"{value} {key}", 2)
+            time.sleep(4)
+
+    lcd.lcd_clear()
+
+    lcd.lcd_display_string("See you ", 1)
+    lcd.lcd_display_string("again", 2)
+
+    lcd.lcd_clear()
+
+    lcd.lcd_display_string("Welcome ", 1)
+
+
+

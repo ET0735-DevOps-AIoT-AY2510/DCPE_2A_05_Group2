@@ -87,3 +87,12 @@ setTimeout(() => {
     statusBox.textContent = "Status: Drink Dispensed";
     statusBox.style.backgroundColor = "seagreen";
 }, 6000);
+
+// To ensure that qr can only be clicked once 
+document.addEventListener("DOMContentLoaded", function () {
+    const qrBtn = document.getElementById("qrScanBtn");
+    qrBtn.addEventListener("click", function () {
+        qrBtn.disabled = true;
+        qrBtn.innerText = "Redirecting...";
+    });
+});

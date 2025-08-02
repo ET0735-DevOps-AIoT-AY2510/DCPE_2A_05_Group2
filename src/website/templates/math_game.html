@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %} Math Game {% endblock %}
+
+{% block content %} 
+<style>
+  body {
+    background: #f4f6f9;
+  }
+</style>
+
+<div class="game-container text-center">
+  <h2 class="mb-4">🧮 Math Game</h2>
+  
+  <!-- Progress Bar -->
+  <div class="progress mb-4" style="height: 25px;">
+    <div id="progress-bar" class="progress-bar bg-success" style="width: 0%;">
+      0 / 16
+    </div>
+  </div>
+
+  <!-- Question Display -->
+  <div id="question" class="question mb-4">Press Start</div>
+
+  <!-- Answer Input -->
+  <input type="text" id="answer" class="form-control answer-input mb-4" readonly>
+
+  <!-- Number Pad -->
+  <div class="numpad">
+    <div class="row">
+      <button class="btn btn-outline-dark" onclick="appendNumber(1)">1</button>
+      <button class="btn btn-outline-dark" onclick="appendNumber(2)">2</button>
+      <button class="btn btn-outline-dark" onclick="appendNumber(3)">3</button>
+    </div>
+    <div class="row">
+      <button class="btn btn-outline-dark" onclick="appendNumber(4)">4</button>
+      <button class="btn btn-outline-dark" onclick="appendNumber(5)">5</button>
+      <button class="btn btn-outline-dark" onclick="appendNumber(6)">6</button>
+    </div>
+    <div class="row">
+      <button class="btn btn-outline-dark" onclick="appendNumber(7)">7</button>
+      <button class="btn btn-outline-dark" onclick="appendNumber(8)">8</button>
+      <button class="btn btn-outline-dark" onclick="appendNumber(9)">9</button>
+    </div>
+    <div class="row">
+      <button class="btn btn-warning" onclick="clearAnswer()">C</button>
+      <button class="btn btn-outline-dark" onclick="appendNumber(0)">0</button>
+      <button class="btn btn-success" onclick="submitAnswer()">Enter</button>
+    </div>
+  </div>
+
+  <!-- Start Button -->
+  <button id="start-btn" class="btn btn-primary btn-lg mt-4" onclick="startGame()">Start Game</button>
+</div>
+
+
+{% endblock %}

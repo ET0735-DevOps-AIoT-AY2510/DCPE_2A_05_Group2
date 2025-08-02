@@ -212,6 +212,25 @@ function updateProgress() {
 
 function endGame() {
   clearInterval(timerInterval);
+  const gameContainer = document.querySelector('.game-container');
+
+  won = (errors < maxErrors && timeLeft > 0)
+
+  if (won) {
+    gameContainer.innerHTML = `
+      <h2 class="mb-4 text-success">🎉 Congratulations! 🎉</h2>
+      <p class="mb-4">You successfully completed the challenge with a score of <strong>${score}/${totalQuestions}</strong>!</p>
+      <a href="/math-game/collect-prize" class="btn btn-lg btn-warning">🎁 Collect Your Prize</a>
+    `;
+  } else {
+    gameContainer.innerHTML = `
+    <h2 class="mb-4 text-danger">Thank you for trying!</h2>
+    <p class="mb-4">Your score: <strong>${score}/${totalQuestions}</strong></p>
+    <a href="/math-game">
+      <button class="btn btn-primary btn-lg" onclick="startGame()">Play Again</button>
+    </a>
+    `;
+  }
   document.getElementById('question').textContent = `🎉 Game Over! Score: ${score} / ${totalQuestions}`;
   document.getElementById('start-btn').style.display = 'block';
   document.getElementById('start-btn').textContent = 'Play Again';

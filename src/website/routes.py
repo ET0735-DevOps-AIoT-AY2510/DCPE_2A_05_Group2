@@ -245,3 +245,10 @@ def logout():
 def math_game():
 
     return render_template("math_game.html", user=current_user)
+
+@directories.route('/math-game/collect-prize')
+@login_required
+def collect_prize():
+    
+    return render_template("collect_prize.html", user=current_user)
+

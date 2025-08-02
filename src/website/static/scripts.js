@@ -249,3 +249,84 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+// Collect Prize
+// Lock scrolling and disable pull-to-refresh
+document.body.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+document.addEventListener('gesturestart', e => e.preventDefault()); // Prevent zooming on iOS
+
+// Scratch Card Logic
+const canvas = document.getElementById('scratch-card');
+const ctx = canvas.getContext('2d');
+const container = document.querySelector('.scratch-card-container');
+
+function resizeCanvas() {
+  canvas.width = container.offsetWidth;
+  canvas.height = container.offsetHeight;
+  ctx.fillStyle = "#aaa";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+let isDrawing = false;
+
+function scratch(e) {
+  if (!isDrawing) return;
+  const rect = canvas.getBoundingClientRect();
+  const x = (e.clientX || e.touches[0].clientX) - rect.left;
+  const y = (e.clientY || e.touches[0].clientY) - rect.top;
+
+  ctx.globalCompositeOperation = 'destination-out';
+  ctx.beginPath();
+  ctx.arc(x, y, 20, 0, 2 * Math.PI);
+  ctx.fill();
+}
+
+canvas.addEventListener('mousedown', () => isDrawing = true);
+canvas.addEventListener('mouseup', () => isDrawing = false);
+canvas.addEventListener('mousemove', scratch);
+
+canvas.addEventListener('touchstart', () => isDrawing = true);
+canvas.addEventListener('touchend', () => isDrawing = false);
+canvas.addEventListener('touchmove', scratch);
+
+// 🎊 Confetti Animation with fade-out
+const confettiCanvas = document.getElementById('confetti-canvas');
+const confettiCtx = confettiCanvas.getContext('2d');
+confettiCanvas.width = window.innerWidth;
+confettiCanvas.height = window.innerHeight;
+
+const confetti = Array.from({length: 150}, () => ({
+  x: Math.random() * confettiCanvas.width,
+  y: Math.random() * confettiCanvas.height,
+  r: Math.random() * 6 + 2,
+  d: Math.random() * 0.5 + 0.5,
+  color: `hsl(${Math.random()*360}, 70%, 60%)`,
+  opacity: 1
+}));
+
+let fadeOut = false;
+let confettiAnimation;
+
+function drawConfetti() {
+  confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+  confetti.forEach(c => {
+    confettiCtx.beginPath();
+    confettiCtx.arc(c.x, c.y, c.r, 0, 2 * Math.PI);
+    confettiCtx.fillStyle = c.color.replace('hsl', 'hsla').replace(')', `,${c.opacity})`);
+    confettiCtx.fill();
+    c.y += c.d;
+    if (c.y > confettiCanvas.height) { c.y = 0; c.x = Math.random() * confettiCanvas.width; }
+    if (fadeOut && c.opacity > 0) c.opacity -= 0.02;
+  });
+
+  if (fadeOut && confetti.every(c => c.opacity <= 0)) {
+    cancelAnimationFrame(confettiAnimation);
+    confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+    return;
+  }
+  confettiAnimation = requestAnimationFrame(drawConfetti);
+}
+
+drawConfetti();
+setTimeout(() => fadeOut = true, 3000);

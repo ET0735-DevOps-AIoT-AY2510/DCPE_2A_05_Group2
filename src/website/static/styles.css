@@ -264,3 +264,79 @@ body{
   animation: flashRed 1s infinite;
   font-weight: bold;
 }
+
+/* Collect Prize CSS */
+.home-btn-c {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    transition: transform 0.2s ease, background 0.2s ease;
+    z-index: 1000;
+}
+
+.home-btn-c:hover {
+    transform: scale(1.1);
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.home-btn-c img {
+    width: 60%;
+    height: 60%;
+}
+
+.celebration-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 500px;
+    text-align: center;
+    animation: fadeIn 1.5s ease-in;
+}
+
+.winner-card {
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(15px);
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+    margin: 20px 0;
+}
+
+.scratch-card-container {
+    background-color: white;
+    position: relative;
+    width: 100%;
+    max-width: 350px;
+    aspect-ratio: 3 / 2;
+    margin: 0 auto;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+}
+
+canvas#scratch-card {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    cursor: grab;
+}
+
+.gift-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+}

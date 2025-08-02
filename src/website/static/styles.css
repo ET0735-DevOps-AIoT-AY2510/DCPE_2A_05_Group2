@@ -199,3 +199,14 @@ body{
     align-items: center;
     justify-content: center;
 }
+
+@keyframes flashRed {
+  0%   { color: red; }
+  50%  { color: darkred; }
+  100% { color: red; }
+}
+
+.flash-warning {
+  animation: flashRed 1s infinite;
+  font-weight: bold;
+}

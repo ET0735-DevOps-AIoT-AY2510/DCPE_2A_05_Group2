@@ -88,6 +88,8 @@ function startGame() {
   score = 0;
   questionCount = 0;
   document.getElementById('start-btn').style.display = 'none';
+  updateErrors();
+  startTimer();
   generateQuestion();
   updateProgress();
 }
@@ -124,6 +126,52 @@ function generateQuestion() {
   document.getElementById('answer').value = '';
 }
 
+// Logic for the timer function
+let timeLeft = 120; // 2 minutes in seconds
+let timerInterval;
+let errors = 0;
+const maxErrors = 3;
+
+// Store reference to timer display for reuse 
+let timerDisplay;
+
+function startTimer() {
+  timerDisplay = document.getElementById('timer');
+  clearInterval(timerInterval);
+  timerDisplay.classList.remove('flash-warning');
+  timeLeft = 120; // For the time left
+  timerDisplay.textContent = `⏱ 2:00 `
+  timerDisplay.style.color = '';
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    if (timeLeft <= 0) {
+      clearInterval(timerInterval)
+      timerDisplay.textContent = `⏱ 2:00 - Game Over`;
+      timerDisplay.classList.remove('flash-warning');
+      timerDisplay.style.color = 'red';
+      endGame();
+      return;
+    }
+    const minutes = Math.floor(timeLeft / 60);
+    const seconds = timeLeft % 60;
+    timerDisplay.textContent = `⏱ ${minutes}:${seconds.toString().padStart(2,'0')}`;
+    if (timeLeft <= 30) { // To add flash warning at the last 30 seconds of the quiz
+      timerDisplay.classList.add('flash-warning');
+      timerDisplay.style.color = 'red';
+    } else {
+      timerDisplay.classList.remove('flash-warning');
+      timerDisplay.style.color = '';
+    }
+    if (timeLeft <= 0) {
+        endGame();
+    }
+  }, 1000);
+}
+
+function updateErrors() {
+  document.getElementById('errors').textContent = `❌ Errors: ${errors} / ${maxErrors}`;
+}
+
 function appendNumber(num) {
   document.getElementById('answer').value += num;
 }
@@ -137,9 +185,18 @@ function submitAnswer() {
   if (!isNaN(userAnswer) && userAnswer === currentAnswer) {
     score++;
     updateProgress();
+  } else {
+    errors++;
+    updateErrors();
+    if (errors >= maxErrors) {
+      endGame();
+      errors = 0
+      return;
+    }
   }
 
   if (questionCount >= totalQuestions) {
+    errors = 0
     endGame();
   } else {
     generateQuestion();
@@ -151,6 +208,13 @@ function updateProgress() {
   const progressBar = document.getElementById('progress-bar');
   progressBar.style.width = `${progressPercent}%`;
   progressBar.textContent = `${score} / ${totalQuestions}`;
+}
+
+function lose() {
+  clearInterval(timerInterval);
+  document.getElementById('question').textContent = `Thank you for trying!`;
+  document.getElementById('start-btn').style.display = 'block';
+  document.getElementById('start-btn').textContent = 'Play Again';
 }
 
 function endGame() {

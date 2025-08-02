@@ -210,14 +210,8 @@ function updateProgress() {
   progressBar.textContent = `${score} / ${totalQuestions}`;
 }
 
-function lose() {
-  clearInterval(timerInterval);
-  document.getElementById('question').textContent = `Thank you for trying!`;
-  document.getElementById('start-btn').style.display = 'block';
-  document.getElementById('start-btn').textContent = 'Play Again';
-}
-
 function endGame() {
+  clearInterval(timerInterval);
   document.getElementById('question').textContent = `🎉 Game Over! Score: ${score} / ${totalQuestions}`;
   document.getElementById('start-btn').style.display = 'block';
   document.getElementById('start-btn').textContent = 'Play Again';

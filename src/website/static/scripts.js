@@ -250,9 +250,6 @@ document.addEventListener('keydown', (e) => {
 });
 
 // Collect Prize
-// Lock scrolling and disable pull-to-refresh
-document.body.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
-document.addEventListener('gesturestart', e => e.preventDefault()); // Prevent zooming on iOS
 
 // Scratch Card Logic
 const canvas = document.getElementById('scratch-card');

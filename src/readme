@@ -1,0 +1,177 @@
+# SP Smart Vending Machine Project
+
+## Overview
+
+### For Customers
+The **Smart Vending Machine** allows customers to purchase drinks either:
+- Directly at the vending machine (powered by Raspberry Pi), or  
+- Online via a dedicated mobile-friendly website.
+
+The vending machine hardware also incorporates several advanced features (see **Hardware Features** below).
+
+Through the Raspberry Pi, customers can:
+1. **dennis u add the features of the hardware**
+
+Through the website, customers can:
+1. **Purchase drinks online** – Select items, make payment, and receive a unique **QR code**.
+2. **Collect purchases** – Scan the QR code at the vending machine's Pi camera to dispense the drink.
+3. **Play an interactive math game** – While waiting (e.g., in a queue), customers can play a fun quiz to earn small incentives. Upon successful completion, collection details are sent via email.
+
+
+
+
+
+### For Staff (Maintenance & Management)
+The staff dashboard is accessible only to **authorized personnel** via secure login.  
+Once logged in, staff can:
+- Add, edit, or remove drinks from the menu.
+- Modify drink details such as **price**, **name**, and **stock level**.
+- Add new staff accounts to the database to delegate maintenance duties.
+
+[YouTube Demo – Staff Side](_link_to_video_here_)
+
+
+
+## Software Information
+
+### Tech Stack
+<!-- Add an image or diagram here -->
+*(Tech stack diagram placeholder)*
+
+### Main Purpose
+The primary goal is to allow customers to purchase drinks via the website.  
+**Workflow:**
+1. Customer selects a drink and completes payment.
+2. Website generates a **QR code** unique to the transaction.
+3. Customer scans the QR code at the vending machine’s Pi camera.
+4. The vending machine verifies the code and dispenses the drink.
+
+[YouTube Demo – Main System](_link_to_video_here_)
+
+
+
+### Website Game
+The website includes an **interactive math quiz** with the following rules:
+- **Error detection system** – The game ends automatically if the player makes 3 incorrect answers.
+- **Time limit** – Each quiz session lasts for a maximum of 2 minutes.
+- **Reward system** – Upon successful completion, the player receives a small incentive, with collection details sent via email.
+
+[YouTube Demo – Game](_link_to_video_here_)
+
+
+
+### Staff Access Features
+- Add or remove drinks from the menu.
+- Modify drink attributes (price, name, stock).
+- Register new staff members in the database.
+
+[YouTube Demo – Staff Features](_link_to_video_here_)
+
+
+
+## Hardware Features
+*(Details to be added – e.g., cooling system, payment integration, internal condition sensors, etc.)*  
+Please update this section with your hardware specifications.
+
+
+
+## Running the Website
+
+### Option 1 – Via Docker
+To run the website on a Raspberry Pi using Docker:
+
+```bash
+docker run -p 5000:5000 chunhoesdocker/raspberrypi
+```
+
+### Option 2 – Via Kubernetes
+Create a YAML file with the following content:
+
+```yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: sqlite-pv
+spec:
+  accessModes:
+    - ReadWriteMany       # Allow multiple pods to read/write
+  capacity:
+    storage: 1Gi
+  hostPath:               # Local storage (for testing on single-node cluster)
+    path: /mnt/data/sqlite-db
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sqlite-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ecommerce-website-deployment
+  labels:
+    app: ecommerce-website
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: ecommerce-website
+  template:
+    metadata:
+      labels:
+        app: ecommerce-website
+    spec:
+      containers:
+        - name: ecommerce-website
+          image: chunhoesdocker/ecommerce_website:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5000
+          volumeMounts:
+            - name: sqlite-storage
+              mountPath: /instance  # DB will live here
+      volumes:
+        - name: sqlite-storage
+          persistentVolumeClaim:
+            claimName: sqlite-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ecommerce-website-service
+spec:
+  selector:
+    app: ecommerce-website
+  ports:
+    - protocol: TCP
+      port: 5000
+      targetPort: 5000
+  type: LoadBalancer
+
+```
+Apply the configuration:
+
+```bash
+kubectl apply -f <your_yaml_file>.yml
+```
+
+## Contributions
+
+#### Chun Ho
+- xxx
+
+### Dennis
+- xxx
+
+### Titus
+- xxx
+
+### Matin
+- xxx
+

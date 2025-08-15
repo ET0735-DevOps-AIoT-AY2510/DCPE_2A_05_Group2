@@ -12,6 +12,7 @@ ULTRASONIC_RANGE = 10   # cm
 # Globals
 last_keypress_time = time.time()
 last_ultrasonic_detect_time = time.time()
+power_state = False
 
 # Shared thread-safe flags
 low_power_event = threading.Event()

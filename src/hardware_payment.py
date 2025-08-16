@@ -6,6 +6,9 @@ from website.models import User, Order, Product
 from website import db
 from hal import hal_lcd as LCD
 import time
+import RPi.GPIO as GPIO
+from hal import hal_dc_motor as motor
+
 
 
 
@@ -65,7 +68,8 @@ def process_order(order_list):
     lcd = LCD.lcd()
     lcd.lcd_display_string("Dispensing", 1)
     lcd.lcd_display_string("drinks", 2)
-    time.sleep()
+    time.sleep(5)
+    motor.init()
 
 
     for order in order_list:
@@ -73,6 +77,10 @@ def process_order(order_list):
             lcd.lcd_clear()
             lcd.lcd_display_string("Dispensing", 1)
             lcd.lcd_display_string(f"{value} {key}", 2)
+            
+            GPIO.output(23, GPIO.HIGH)  # Turn motor on
+            time.sleep(5)  # Wait for 5 seconds
+            GPIO.output(23, GPIO.LOW)  # Turn motor off
             time.sleep(4)
 
     lcd.lcd_clear()

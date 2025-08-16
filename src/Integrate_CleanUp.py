@@ -231,7 +231,7 @@ def on_key_press(key):
                     burglar_paused = False
                 else:
                     lcd_display.lcd_display_string("Wrong Code!".ljust(16), line=1)
-                    sleep(2)
+                    sleep(1)
                 entered_code.clear()
                 code_active=False
 

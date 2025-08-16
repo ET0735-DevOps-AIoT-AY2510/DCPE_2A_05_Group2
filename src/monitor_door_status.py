@@ -1,44 +1,37 @@
 import time
-from threading import Thread
+import threading
 import queue
 
-from hal import hal_rfid_reader as rfid_reader
 from hal import hal_ir_sensor as ir_sensor
 from hal import hal_buzzer as buzzer
 from hal import hal_input_switch as switch
 
+from power_mode import staff_access_event as staff_access
+from PotentialMeter import paid_event as paid
 
-def monitor_door(paid, staff_access):
+
+
+def monitor_door():
 
     while True:
-        ir_value = ir_sensor.get_ir_sensor_state()
-        time.sleep(2)
-        print("IR Sensor State:", ir_value)
-        if ir_value is False and paid is False and staff_access is False:
-            buzzer.beep(0.5, 0.5, 10)
-            time.sleep(2)
-
-def inputswitch():
-    switch.init()
+        if not staff_access.is_set():
+            ir_value = ir_sensor.get_ir_sensor_state()
+            time.sleep(1)
+            print("IR Sensor State:", ir_value)
+            if ir_value == True:
+                print("Burglar Detected!")
+                buzzer.beep(0.5, 0.5, 3)
+                time.sleep(1)
 
 def main():
     # Initialising the Hardware components and variable
     ir_sensor.init()
     buzzer.init()
-    paid = False
-    staff_access = False
     # Initialising and Starting Threads
-    door_thread = Thread(target=monitor_door, args=(paid, staff_access), daemon=True).start()
+    threading.Thread(target=monitor_door, daemon=True).start()
     
     try:
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
         print("Program Stopped")
-
-
-
-    
-
-if __name__ == '__main__':
-    main()

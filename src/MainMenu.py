@@ -1,6 +1,6 @@
-# main.py
-
-# Services
+# =========================
+# Imports
+# =========================
 import time
 import threading
 from threading import Thread
@@ -11,85 +11,122 @@ from database.seed_data import app
 from hal import hal_keypad as keypad
 from hal import hal_lcd as LCD
 from hal import hal_input_switch as switch
-from power_mode import low_power_event, low_power_mode, high_power_event, staff_access_event, monitor_power
+from hal import hal_dc_motor as motor
+from power_mode import (
+    low_power_event,
+    low_power_mode,
+    high_power_event,
+    staff_access_event,
+    monitor_power,
+    attach_lcd,
+    ping_activity,
+    request_low_power_with_guard,
+)
 import RFID as payment
 import monitor_door_status as burglar_system
 from PotentialMeter import MenuSelection, selection_finish_event, paid_event
+from dcmotor import motor_spin
+from paynow_ui import start_paynow_qr, stop_paynow_ui, paynow_success_event
 from database.db_utils import load_products_from_db, update_stock_in_db
 
-# Admin module (receives keys via dispatcher; exports session_done)
 import admincode as admin
 from admincode import session_done
 
-# ---------------------------------------------------------------------
-# Thread-safe LCD wrapper (prevents interleaved writes from multiple threads)
-# ---------------------------------------------------------------------
+
+# =========================
+# Classes
+# =========================
+# Thread-safe wrapper around the LCD HAL to serialize writes
 class SafeLCD:
+    # Store the raw LCD object and set up a re-entrant lock
     def __init__(self, lcd):
         self._lcd = lcd
         self._lock = threading.RLock()
+
+    # Write a padded 16-char string to the specified LCD line
     def lcd_display_string(self, s, line):
         s = str(s)[:16].ljust(16)
         with self._lock:
             self._lcd.lcd_display_string(s, line)
+
+    # Clear the LCD display safely
     def lcd_clear(self):
         with self._lock:
             self._lcd.lcd_clear()
 
-# ---------------------------------------------------------------------
+
+# =========================
 # Globals / State
-# ---------------------------------------------------------------------
+# =========================
 Vending_Drinks = load_products_from_db()
 shared_keypad_queue = queue.Queue()
-stop_main_event = threading.Event()  # ask main() to stop immediately
+stop_main_event = threading.Event()
 
-# ---------------------------------------------------------------------
-# Keypad callback: single dispatcher for BOTH modes
-# ---------------------------------------------------------------------
+
+# =========================
+# Keypad Dispatch
+# =========================
+# Route keypad input, waking the system and forwarding to admin or user
 def key_dispatch(key):
-    # While in ADMIN and session not done, deliver keys directly to admin
+    try:
+        if key not in (0, '0'):
+            ping_activity()
+    except Exception:
+        pass
+
     if staff_access_event.is_set() and not session_done.is_set():
         try:
             admin.on_key_press(key)
         except Exception as e:
             print(f"[KEY DISPATCH] admin handler error: {e}")
         return
-    # Otherwise, normal vending input
+
     shared_keypad_queue.put(key)
 
-# ---------------------------------------------------------------------
+
+# =========================
 # Startup
-# ---------------------------------------------------------------------
+# =========================
+# Initialize HALs, create/attach the shared LCD, and return a SafeLCD
 def start():
-    keypad.init(key_dispatch)                   # HAL scanner calls dispatcher
+    keypad.init(key_dispatch)
     switch.init()
-    Thread(target=keypad.get_key, daemon=True).start()
+    motor.init()
+
     real_lcd = LCD.lcd()
-    lcd = SafeLCD(real_lcd)                     # shared, thread-safe LCD
-    lcd.lcd_clear()
+    try:
+        real_lcd.backlight(0)
+    except Exception:
+        pass
+
+    attach_lcd(real_lcd)
+    lcd = SafeLCD(real_lcd)
     return lcd
 
-# ---------------------------------------------------------------------
-# Switch monitor
-# ---------------------------------------------------------------------
+
+# =========================
+# Switch Monitor
+# =========================
+# Poll the admin/user switch and toggle mode flags accordingly
 def monitor_switch():
     while True:
         input_val = switch.read_slide_switch()
-        if input_val == 0:  # Admin mode
+        if input_val == 0:
             if not staff_access_event.is_set():
                 print("[SWITCH] Admin mode ON")
                 staff_access_event.set()
-                stop_main_event.set()  # stop vending ASAP
+                stop_main_event.set()
         else:
-            # Only leave admin after the admin session finishes
             if staff_access_event.is_set() and session_done.is_set():
                 print("[SWITCH] Admin mode OFF")
                 staff_access_event.clear()
         time.sleep(0.05)
 
-# ---------------------------------------------------------------------
+
+# =========================
 # Utilities
-# ---------------------------------------------------------------------
+# =========================
+# Drain the user keypad queue to avoid stale inputs
 def flush_keypad_queue():
     while not shared_keypad_queue.empty():
         try:
@@ -97,42 +134,54 @@ def flush_keypad_queue():
         except queue.Empty:
             break
 
+# Blocking read from the keypad that returns None if interrupted
 def get_key_input(prompt=""):
-    """Blocking read from keypad, but aborts early if switching to Admin."""
     if prompt:
         print(prompt)
     flush_keypad_queue()
     while shared_keypad_queue.empty():
         if stop_main_event.is_set() or staff_access_event.is_set():
-            return None  # interrupted by Admin switch
+            return None
         time.sleep(0.05)
     return shared_keypad_queue.get()
 
+# Handle payment selection and flow: RFID (1) or PayNow QR (2)
 def paymenttype():
-    """Returns True on successful payment, False otherwise. Interruptible."""
     nextdecision = get_key_input("Pick 1 for Credit or 2 for PayNow")
     if nextdecision is None:
         return False
+
     if nextdecision == 1:
         return payment.payment()
-    elif nextdecision == 2:
-        print("QR generating (simulated)")
-        time.sleep(1)
-        return True
-    elif nextdecision == "*":
-        return paymenttype()
-    else:
-        print("Invalid input")
+
+    if nextdecision == 2:
+        url = start_paynow_qr(port=5005)
+        print("Showed QR for:", url)
+        paynow_success_event.wait()
+        stop_paynow_ui()
+        if url:
+            print("[PAYNOW] Payment success confirmed by scan.")
+            return True
+        print("[PAYNOW] Cancelled or interrupted.")
         return False
 
+    if nextdecision == "*":
+        return paymenttype()
+
+    print("Invalid input")
+    return False
+
+# Append a sale record to a text logfile
 def log_sale(item_name, price):
     with open("sales_log.txt", "a") as log:
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         log.write(f"{timestamp} - Sold: {item_name} @ ${price:.2f}\n")
 
-# ---------------------------------------------------------------------
-# Vending main loop (User mode)
-# ---------------------------------------------------------------------
+
+# =========================
+# User Mode (Main Loop)
+# =========================
+# Run the user-facing vending flow; exits when interrupted or finished
 def main(lcd):
     global paid
     paid = False
@@ -141,7 +190,6 @@ def main(lcd):
     print("waiting")
     low_power_mode()
 
-    # Wait for high power, but allow interruption by Admin
     while not high_power_event.is_set():
         if staff_access_event.is_set() or stop_main_event.is_set():
             return
@@ -149,12 +197,10 @@ def main(lcd):
 
     print("start")
     while True:
-        # Exit immediately if Admin requests stop
         if staff_access_event.is_set() or stop_main_event.is_set():
             print("[MAIN] Stop requested.")
             break
 
-        # Small sleep but remain interruptible
         for _ in range(10):
             if staff_access_event.is_set() or stop_main_event.is_set():
                 break
@@ -167,7 +213,7 @@ def main(lcd):
                and not stop_main_event.is_set()):
             lcd.lcd_display_string("Available items:", 1)
             lcd.lcd_display_string("Scroll For Menu!", 2)
-            for _ in range(15):  # ~1.5s but interruptible
+            for _ in range(15):
                 if staff_access_event.is_set() or stop_main_event.is_set():
                     break
                 time.sleep(0.1)
@@ -180,16 +226,14 @@ def main(lcd):
             selection_finish_event.set()
             lcd.lcd_clear()
 
-            # If interrupted during input, stop immediately
             if Keyvalue is None or staff_access_event.is_set() or stop_main_event.is_set():
                 break
 
             if Keyvalue == 0:
                 lcd.lcd_clear()
                 lcd.lcd_display_string("Shutting down...", 1)
-                time.sleep(1.5)
-                low_power_mode()
-                lcd.lcd_clear()
+                time.sleep(0.6)
+                request_low_power_with_guard(guard_sec=1.2)
                 break
 
             if Keyvalue not in Vending_Drinks:
@@ -224,6 +268,7 @@ def main(lcd):
                     continue
 
                 print("Payment successful! Dispensing drink...")
+                motor_spin()
                 if update_stock_in_db(Keyvalue):
                     print("Stock updated successfully.")
                     Vending_Drinks[Keyvalue]["stock"] -= 1
@@ -235,9 +280,8 @@ def main(lcd):
                 break
             elif decision == 0:
                 lcd.lcd_display_string("Shutting down...", 1)
-                time.sleep(1.5)
-                low_power_mode()
-                lcd.lcd_clear()
+                time.sleep(0.6)
+                request_low_power_with_guard(guard_sec=1.2)
                 break
             else:
                 print("Invalid option. Back to menu.")
@@ -248,19 +292,23 @@ def main(lcd):
             break
 
     print("System idle")
-    
+
+
+# =========================
+# Controller
+# =========================
+# Manage transitions between user mode and admin mode
 def controller(lcd):
     current_mode = None
     while True:
         if staff_access_event.is_set():
             if current_mode != "admin":
                 print("[MODE] Switching to ADMIN")
-                stop_main_event.set()      # stop vending loop ASAP
-                flush_keypad_queue()       # drop stale presses
+                stop_main_event.set()
+                flush_keypad_queue()
                 current_mode = "admin"
 
                 try:
-                    # Pass shared SafeLCD and the flusher (no keypad re-init)
                     admin.main(lcd, flush_keys=flush_keypad_queue)
                 finally:
                     print("[MODE] Admin finished.")
@@ -278,21 +326,28 @@ def controller(lcd):
                 print("[MODE] Starting USER main")
                 current_mode = "user"
                 with app.app_context():
-                    main(lcd)  # returns when Admin flips or stop_main_event set
+                    main(lcd)
                 print("[MODE] USER main returned")
                 current_mode = None
 
         time.sleep(0.05)
 
-# ---------------------------------------------------------------------
-# Entry point
-# ---------------------------------------------------------------------
+
+# =========================
+# Starting Point
+# =========================
 if __name__ == '__main__':
     lcd = start()
+    try:
+        request_low_power_with_guard(guard_sec=2.0)
+    except Exception:
+        pass
+
     monitor_power()
+
+    Thread(target=keypad.get_key, daemon=True).start()
     threading.Thread(target=MenuSelection, daemon=False).start()
     threading.Thread(target=monitor_switch, daemon=True).start()
     threading.Thread(target=burglar_system.main, daemon=True).start()
 
-    # Controller orchestrates both modes
     controller(lcd)

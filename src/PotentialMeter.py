@@ -19,11 +19,11 @@ def get_item_index(potential_val):
 
 def MenuSelection():
     LCD = start()
-    Vending_Drinks = load_products_from_db()
     last_index = -1
     time.sleep(1)
     while True:
         while not selection_finish_event.is_set():
+            Vending_Drinks = load_products_from_db()
             potential_val = potentialmeter.get_adc_value(1)
             item_index = get_item_index(potential_val)
             if last_index != item_index and item_index in Vending_Drinks:

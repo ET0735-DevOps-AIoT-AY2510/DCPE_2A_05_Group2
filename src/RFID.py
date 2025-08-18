@@ -4,11 +4,10 @@ from hal import hal_rfid_reader as rfid_reader
 from hal import hal_lcd as LCD
 reader = rfid_reader.init()
 lcd = LCD.lcd()
-lcd.lcd_clear()
-lcd.lcd_display_string("RFID", 1)
 
 def payment():
     print("Processing payment...")
+    lcd.lcd_clear()
     paid = False
     count = 15
     while(count != 0):

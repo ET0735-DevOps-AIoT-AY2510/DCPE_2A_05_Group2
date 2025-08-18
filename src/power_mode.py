@@ -14,7 +14,8 @@ from PotentialMeter import selection_finish_event
 INACTIVITY_TIMEOUT = 20
 ULTRASONIC_RANGE   = 20
 ULTRA_POLL_SEC     = 0.10
-DEBUG              = False
+NEAR_HITS_REQ      = 2      # consecutive near reads required to wake (debounce)
+DEBUG              = False  # set True for diagnostics
 
 # =========================
 # Public Events
@@ -39,7 +40,6 @@ _sleep_guard_until  = 0.0
 # Logging
 # =========================
 def log(msg):
-    # Print debug messages when DEBUG is True
     if DEBUG:
         print(f"[power_mode] {msg}")
 
@@ -47,19 +47,18 @@ def log(msg):
 # LCD Attachment & Helpers
 # =========================
 def attach_lcd(lcd_obj):
-    # Attach a shared LCD instance provided by the main program
+    """Attach a shared LCD instance provided by main."""
     global lcd_instance
     with _lcd_lock:
         lcd_instance = lcd_obj
 
 def _ensure_lcd():
-    # Lazily construct an LCD instance if none has been attached
+    """Lazily construct an LCD if none attached."""
     global lcd_instance
     if lcd_instance is None:
         lcd_instance = lcd.lcd()
 
 def _call_if_exists(obj, name, *args):
-    # Call an attribute if it exists and is callable; return True on success
     fn = getattr(obj, name, None)
     if callable(fn):
         try:
@@ -70,7 +69,7 @@ def _call_if_exists(obj, name, *args):
     return False
 
 def _set_backlight(on: bool):
-    # Try several common HAL APIs to control the LCD backlight
+    """Try several HAL APIs to control backlight."""
     if lcd_instance is None:
         return False
     if _call_if_exists(lcd_instance, "backlight", 1 if on else 0): return True
@@ -78,6 +77,7 @@ def _set_backlight(on: bool):
     if _call_if_exists(lcd_instance, "set_backlight", bool(on)): return True
     if _call_if_exists(lcd_instance, "enable_backlight", bool(on)): return True
     if _call_if_exists(lcd_instance, "set_backlight_enabled", bool(on)): return True
+    # last resort: main display power (not always backlight)
     if on:
         if _call_if_exists(lcd_instance, "display_on"): return True
         if _call_if_exists(lcd_instance, "lcd_display_on"): return True
@@ -87,7 +87,6 @@ def _set_backlight(on: bool):
     return False
 
 def _force_backlight_off(retries: int = 4, wait: float = 0.04):
-    # Repeatedly attempt to turn the backlight off for stubborn backpacks
     ok = False
     for _ in range(max(1, retries)):
         ok = _set_backlight(False)
@@ -101,9 +100,11 @@ def _force_backlight_off(retries: int = 4, wait: float = 0.04):
 # Activity Hooks
 # =========================
 def ping_activity():
-    # Record activity and wake to high power unless in a guard window
+    """Record activity and wake to high power unless in guard window."""
     global _last_keypress_time, _last_ultra_time
     if time.time() < _sleep_guard_until:
+        if DEBUG:
+            log("activity ignored (guard window)")
         return
     ts = time.time()
     _last_keypress_time = ts
@@ -111,7 +112,7 @@ def ping_activity():
     high_power_mode()
 
 def request_low_power_with_guard(guard_sec: float = 1.2):
-    # Enter low power and ignore wake-ups for a short guard period
+    """Enter low power and ignore wakes for a short guard period."""
     global _sleep_guard_until
     _sleep_guard_until = time.time() + max(0.0, guard_sec)
     low_power_mode()
@@ -120,7 +121,7 @@ def request_low_power_with_guard(guard_sec: float = 1.2):
 # Power Transitions
 # =========================
 def high_power_mode():
-    # Ensure LCD is available and turn backlight on; raise event flags
+    """Backlight on; set events."""
     _ensure_lcd()
     with _lcd_lock:
         _set_backlight(True)
@@ -130,7 +131,7 @@ def high_power_mode():
         log("High Power ON")
 
 def low_power_mode():
-    # Clear LCD, force backlight off, signal low-power state, and nudge UI
+    """Clear LCD, backlight off; set events; force ultrasonic to re-arm."""
     _ensure_lcd()
     with _lcd_lock:
         try:
@@ -141,18 +142,21 @@ def low_power_mode():
         _force_backlight_off()
     high_power_event.clear()
     low_power_event.set()
+    # important: force ultrasonic to re-init after sleep
+    global _ultra_inited
+    _ultra_inited = False
     try:
         selection_finish_event.set()
     except Exception:
         pass
     if DEBUG:
-        log("Low Power ON")
+        log("Low Power ON (ultrasonic marked for re-init)")
 
 # =========================
 # Ultrasonic Helpers
 # =========================
 def _ultra_init():
-    # Initialize ultrasonic sensor and set readiness flag
+    """Initialize ultrasonic sensor and set readiness flag."""
     global _ultra_inited
     try:
         usonic.init()
@@ -163,7 +167,7 @@ def _ultra_init():
         log(f"ultrasonic init FAIL: {e}")
 
 def _ultra_read_distance():
-    # Read distance from ultrasonic sensor; return None on failure
+    """Read distance; return None on failure."""
     try:
         d = usonic.get_distance()
         if d is None or d <= 0:
@@ -174,25 +178,30 @@ def _ultra_read_distance():
         return None
 
 def _ultra_quick_check_and_wake():
-    # Short burst of reads to wake immediately if presence is detected
+    """Short burst of reads to wake immediately if presence is detected."""
     global _last_ultra_time, _last_keypress_time
+    hits = 0
     for _ in range(6):
         d = _ultra_read_distance()
         if d is not None and d < ULTRASONIC_RANGE and time.time() >= _sleep_guard_until:
-            now = time.time()
-            _last_ultra_time    = now
-            _last_keypress_time = now
-            high_power_mode()
-            if DEBUG:
-                log("quick wake: ultrasonic presence")
-            return
+            hits += 1
+            if hits >= NEAR_HITS_REQ:
+                now = time.time()
+                _last_ultra_time    = now
+                _last_keypress_time = now
+                high_power_mode()
+                if DEBUG:
+                    log("quick wake: ultrasonic presence")
+                return
+        else:
+            hits = 0
         time.sleep(0.1)
 
 # =========================
 # Background Monitors
 # =========================
 def monitor_inactivity():
-    # Put the system into low power after inactivity timeout
+    """Enter low power after both keypad & ultrasonic idle long enough."""
     global _last_keypress_time, _last_ultra_time
     while True:
         if not staff_access_event.is_set():
@@ -204,17 +213,25 @@ def monitor_inactivity():
         time.sleep(1)
 
 def monitor_ultrasonic():
-    # Poll ultrasonic sensor and wake system on presence
+    """Poll ultrasonic and wake on presence, with reliability tweaks."""
     global _last_ultra_time, _last_keypress_time
     _ultra_init()
     fail_count = 0
+    near_hits = 0
+
     while True:
+        # While sleeping, if sensor not inited, re-init quickly
+        if low_power_event.is_set() and not _ultra_inited:
+            _ultra_init()
+            time.sleep(0.05)
+
         if staff_access_event.is_set() or not _ultra_inited:
             time.sleep(ULTRA_POLL_SEC)
             continue
 
         d = _ultra_read_distance()
         if d is None:
+            near_hits = 0
             fail_count += 1
             if DEBUG and fail_count % 10 == 0:
                 log(f"ultrasonic: {fail_count} consecutive failures; reinit soon")
@@ -228,17 +245,28 @@ def monitor_ultrasonic():
         if DEBUG:
             log(f"ultrasonic distance: {d:.1f} cm")
 
-        if d < ULTRASONIC_RANGE and time.time() >= _sleep_guard_until:
-            now = time.time()
-            _last_ultra_time    = now
-            _last_keypress_time = now
-            high_power_mode()
-            if DEBUG:
-                log("wake: ultrasonic presence")
+        if d < ULTRASONIC_RANGE:
+            if time.time() < _sleep_guard_until:
+                if DEBUG:
+                    log("presence ignored (guard window)")
+                near_hits = 0
+            else:
+                near_hits += 1
+                if near_hits >= NEAR_HITS_REQ:
+                    now = time.time()
+                    _last_ultra_time    = now
+                    _last_keypress_time = now
+                    high_power_mode()
+                    if DEBUG:
+                        log("wake: ultrasonic presence (debounced)")
+                    near_hits = 0
+        else:
+            near_hits = 0
+
         time.sleep(ULTRA_POLL_SEC)
 
 def _watch_admin_transition():
-    # Re-arm ultrasonic and timers when returning from admin mode
+    """Re-arm ultrasonic and timers when returning from admin mode."""
     prev = staff_access_event.is_set()
     while True:
         cur = staff_access_event.is_set()
@@ -257,10 +285,10 @@ def _watch_admin_transition():
 # Orchestrator
 # =========================
 def monitor_power():
-    # Initialize LCD, enter low power, quick-check presence, and start monitors
+    """Enter Low Power, quick presence poke, and start background monitors."""
     _ensure_lcd()
-    low_power_mode()
-    _force_backlight_off()
+    low_power_mode()       # goes dark and marks ultrasonic for re-init
+    _force_backlight_off() # reinforce (some backpacks need multiple writes)
     _ultra_init()
     _ultra_quick_check_and_wake()
     threading.Thread(target=monitor_inactivity, daemon=True).start()

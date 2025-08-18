@@ -21,7 +21,7 @@ import subprocess
 
 # ===== CONFIG =====
 TOKEN = "8242655620:AAFPEAtnxfRjwPnp6J7t3kEMFSp5w94Yujw"
-chat_id = "5043247672"
+chat_id = ["5043247672","-1002502383796"]
 
 sender_email = "vmoperations3@gmail.com"
 password = "tucq kspl jryl brnv"
@@ -91,27 +91,34 @@ def capture_image():
         return None
 
 def send_telegram_text(message):
-    try:
-        url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-        params = {'chat_id': chat_id,'text': message}
-        resp = requests.get(url, params=params)
-        print("Telegram message sent:", resp.json())
-    except Exception as e:
-        print(f"[ERROR] Telegram text failed: {e}")
+    for cid in chat_id:
+        try:
+            url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+            params = {'chat_id': cid, 'text': message}
+            resp = requests.get(url, params=params)
+            try:
+                print(f"Telegram text response for {cid}:", resp.json())
+            except Exception:
+                print(f"Telegram text raw response for {cid}:", resp.text)
+        except Exception as e:
+            print(f"[ERROR] Telegram text failed for {cid}: {e}")
 
 def send_telegram_image(image_path):
-    try:
-        img = Image.open(image_path)
-        image_stream = BytesIO()
-        img.save(image_stream, format='PNG')
-        image_stream.seek(0)
-        url = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
-        files = {'photo': ('image.png', image_stream)}
-        data = {'chat_id': chat_id}
-        resp = requests.post(url, files=files, data=data)
-        print("Telegram image sent:", resp.json())
-    except Exception as e:
-        print(f"[ERROR] Telegram image failed: {e}")
+    for cid in chat_id:  # support personal + group
+        try:
+            with open(image_path, "rb") as f:
+                url = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
+                files = {'photo': (os.path.basename(image_path), f, 'image/jpeg')}
+                data = {'chat_id': cid}
+                resp = requests.post(url, files=files, data=data)
+
+                # Debug: prefer JSON, but fall back to raw text
+                try:
+                    print(f"Telegram image response for {cid}:", resp.json())
+                except Exception:
+                    print(f"Telegram image raw response for {cid}:", resp.text)
+        except Exception as e:
+            print(f"[ERROR] Telegram image failed for {cid}: {e}")
 
 def send_email_alert():
     for recipient in recipient_emails:

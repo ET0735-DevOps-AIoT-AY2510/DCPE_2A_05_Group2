@@ -157,14 +157,14 @@ def checkout():
 def payment_success():
     # Data for QR code: user id and order ids
     orders = Order.query.filter_by(user_id=current_user.id).all()
-    cart_list = []
+    cart_list = {}
     for order in orders:
         product = Product.query.get(order.product_id)
         if product:
-            cart_list.append({int(product.id): int(order.quantity)})
+            cart_list[int(product.id)] = {'name': product.name, 'quantity': int(order.quantity)}
 
     # Convert to JSON string and back to ensure int keys are preserved
-    qr_data = json.dumps(json.loads(json.dumps(cart_list)), ensure_ascii=False)
+    qr_data = json.dumps(cart_list, ensure_ascii=False)
     # Ensure the qr_images folder exist 
     qr_folder = os.path.join('website', 'static', 'images', 'qr_images')
     os.makedirs(qr_folder, exist_ok=True)

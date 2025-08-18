@@ -9,9 +9,10 @@ from .models import Product, User, Order
 from werkzeug.security import generate_password_hash # For security
 import qrcode # For QR Code generation
 import os 
+import random
 
 # For hardware implementation
-from hardware_payment import scan_and_get_orders, process_order
+# from hardware_payment import scan_and_get_orders, process_order
 
 directories = Blueprint('directories', __name__, url_prefix='/')
 
@@ -156,23 +157,25 @@ def checkout():
 def payment_success():
     # Data for QR code: user id and order ids
     orders = Order.query.filter_by(user_id=current_user.id).all()
-    order_ids = [str(order.id) for order in orders]
-    qr_data = str(current_user.id)
+    cart_list = []
+    for order in orders:
+        product = Product.query.get(order.product_id)
+        if product:
+            cart_list.append({int(product.id): int(order.quantity)})
 
+    # Convert to JSON string and back to ensure int keys are preserved
+    qr_data = json.dumps(json.loads(json.dumps(cart_list)), ensure_ascii=False)
     # Ensure the qr_images folder exist 
     qr_folder = os.path.join('website', 'static', 'images', 'qr_images')
     os.makedirs(qr_folder, exist_ok=True)
+    random_str = str(random.randint(100000, 999999))
 
-    qr_filename = f"user_{current_user.id}_qr.png"
+    qr_filename = f"user_{current_user.id}_{random_str}_qr.png"
     qr_path = os.path.join(qr_folder, qr_filename)
     qrcode.make(qr_data).save(qr_path)
 
     # Pass the relative path from static to URL for
     qr_url = f"images/qr_images/{qr_filename}"
-
-    # order_list = scan_and_get_orders()
-
-    # process_order(order_list)
 
     return render_template("payment_success.html", qr_filename=qr_url)
 

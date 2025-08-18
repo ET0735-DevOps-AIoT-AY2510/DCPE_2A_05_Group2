@@ -179,18 +179,6 @@ def payment_success():
 
     return render_template("payment_success.html", qr_filename=qr_url)
 
-@directories.route('/product-details/payment-success/qr_scanning', methods=['GET', 'POST'])
-def qr_scan():
-
-    order_list = scan_and_get_orders()
-
-    process_order(order_list)
-
-    return redirect(url_for('directories.clear_cart'))
-
-
-
-
 # Login Information
 @directories.route('/login', methods=['GET', 'POST'])
 def login():

@@ -209,13 +209,33 @@ kubectl apply -f <your_yaml_file>.yml
 ## Contributions
 
 #### Chun Ho
-- xxx
+- Website Implementation (Frontend + Backend)
+- Math Game in Website + Prize Collection QR
+- Dynamic QR Code when Payment is successful (QR that changes according to product orders)
+- Creation of the Main Database and integration with the website
+- Integrating website database with the hardware database (ensure container uses same database)
+- Creating Dockerfile and docker image
 
 ### Dennis
-- xxx
+- Low power and high power mode (Keypad, LCD, ultrasonic sensor)
+- Math game implementation (keypad, LCD)
+- Burglar detection (accelerometer)
+- DC motor to dispense drink
+- SRS document, system testing document
+- Pytest for the Main_menu file
 
 ### Titus
-- xxx
+- MainMenu (Keypad, LCD)
+- Person detection (Ultrasonic, Keypad)
+- Switch to Admin/User (Switch)
+- Physical Payment (RFID)
+- Online Payment (QR Generation Popup)
+- Dictionary for Database + Utilities for Database (Code)
+- Integration for all sprints + merging
 
 ### Matin
-- xxx
+- Temperature & Humidity monitoring (LCD, DHT11)
+- Admin code/access (Keypad, LCD, servo motor)
+- Burglar Detection & Image Capture (IR, buzzer)
+- Telegram Alert with Burglar Image for Burglar Detection
+- Email Alert for temperature out of range

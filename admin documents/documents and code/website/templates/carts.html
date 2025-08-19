@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %} Carts {% endblock %}
+
+{% block content %} 
+<div class="container py-5">
+
+  <!-- Back Button -->
+  <div class="mb-4">
+    <a href="/" class="btn btn-outline-primary">
+      &larr; Back to Home
+    </a>
+  </div>
+
+  <h2 class="mb-4 text-center">🛒 Your Cart</h2>
+
+  {% if cart_items %}
+    <div class="row justify-content-center">
+      <div class="col-lg-10">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            {% set total = 0 %}
+            {% set grouped_items = {} %}
+
+            <!-- Group Items together -->
+            {% for item in cart_items %}
+              {% if grouped_items[item.name] %}
+                {% set _ = grouped_items[item.name].update({
+                  'quantity': grouped_items[item.name].quantity + item.quantity
+                }) %}
+              {% else %}
+                {% set _ = grouped_items.update({item.name: item}) %}
+              {% endif %}
+            {% endfor %}
+
+            {% for name, item in grouped_items.items() %}
+              <div class="d-flex justify-content-between align-items-center border-bottom py-3">
+                <div>
+                  <h5 class="mb-1">{{ name }}</h5>
+                  <div class="d-flex align-items-center mt-2">
+                      <form action="/cart/update-quantity" style="display:inline;" method="POST">
+                        <input type="hidden" name="order_id" value="{{ item.id }}">
+                        <input type="hidden" name="action" value="decrease">
+                        <button type="submit" class="minus-button btn btn-sm btn-outline-dark me-2">−</button>
+                      </form>
+
+                      <span class="quantity-of-drinks me-2 fw-bold">{{ item.quantity }}</span>
+
+                      <form action="/cart/update-quantity" style="display:inline;" method="POST">
+                        <input type="hidden" name="order_id" value="{{ item.id }}">
+                        <input type="hidden" name="action" value="increase">
+                        <button type="submit" class="add-button btn btn-sm btn-outline-dark me-3">+</button>
+                      </form>
+
+                      <form action="/cart/update-quantity" style="display:inline;" method="POST" class="remove-product">
+                        <input type="hidden" name="order_id" value="{{ item.id }}">
+                        <input type="hidden" name="action" value="delete">
+                        <button type="submit" class=" btn btn-sm btn-outline-danger">✕</button>
+                      </form>
+
+
+                  </div>
+                </div>
+                <div class="text-end">
+                  <div class="text-muted">Unit: ${{ "%.2f"|format(item.price) }}</div>
+                  <div class="fw-bold fs-5">${{ "%.2f"|format(item.price * item.quantity) }}</div>
+                  {% set total = total + (item.price * item.quantity) %}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+
+          <!-- Total Section -->
+          <div class="card-footer text-end">
+            <h4 class="mb-0">Total: ${{ "%.2f"|format(cart_total) }}</h4>
+          </div>
+        </div>
+
+        <!-- Product Details Button -->
+        <div class="text-center mt-4">
+          <a href="/product-details" class="btn btn-primary">
+            View Product Details
+          </a>
+        </div>
+
+      </div>
+    </div>
+  {% else %}
+    <div class="text-center text-muted fs-5 mt-5">Your cart is empty 🥲</div>
+  {% endif %}
+
+</div>
+
+{% endblock %}

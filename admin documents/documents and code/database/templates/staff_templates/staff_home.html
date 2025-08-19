@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Staff Home{% endblock %}
+
+{% block content %}
+<!-- Home Button -->
+<div style="margin-top: 10px; margin-right: 12px;">
+  <a href="/" class="btn btn-light shadow-sm" style="border-radius: 50%; padding: 0.5rem; margin-left: 8px;">
+    <img src="{{ url_for('static', filename='images/home_icon.svg') }}" alt="Home" style="width: 24px; height: 24px;">
+  </a>
+
+  <a href="/staff/add-staff" class="btn btn-light shadow-sm" style="border-radius: 50%; padding: 0.5rem; margin-left: 8px;">
+    <img src="{{ url_for('static', filename='images/add-user.png') }}" alt="Home" style="width: 24px; height: 24px;">
+  </a>
+
+</div>
+
+<div class="container py-5">
+
+  <!-- Welcome Header -->
+  <div class="text-center mb-5">
+    <h1 class="display-5 fw-bold">👩‍🔧 Staff Dashboard</h1>
+    <p class="text-muted">Manage products in your vending machine</p>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="row justify-content-center g-4" >
+    <div class="col-md-5" style="margin-bottom: 12px;">
+      <div class="card shadow border-0 text-center h-100">
+        <div class="card-body d-flex flex-column justify-content-between">
+          <div>
+            <h4 class="card-title">➕ Add New Product</h4>
+            <p class="card-text text-muted">Add new drinks or snacks to your machine inventory.</p>
+          </div>
+          <a href="{{ url_for('staff_directories.add_product') }}" class="btn btn-primary mt-3">Add Product</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-5">
+      <div class="card shadow border-0 text-center h-100">
+        <div class="card-body d-flex flex-column justify-content-between">
+          <div>
+            <h4 class="card-title">📦 Update Product Stock</h4>
+            <p class="card-text text-muted">Restock or change existing item quantities.</p>
+          </div>
+          <a href="{{ url_for('staff_directories.update_drinks') }}" class="btn btn-success mt-3">Update Stock</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -37,7 +37,8 @@ Once logged in, staff can:
 ## Software Information
 
 ### Tech Stack
-<!-- Add an image or diagram here -->
+<img width="557" height="505" alt="image" src="https://github.com/user-attachments/assets/13d1555b-a09e-43e6-9bb1-d29f8a458e6d" />
+
 *(Tech stack diagram placeholder)*
 
 ### Main Purpose

@@ -67,7 +67,7 @@ The website includes an **interactive math quiz** with the following rules:
 *(Details to be added – e.g., cooling system, payment integration, internal condition sensors, etc.)*  
 Please update this section with your hardware specifications.
 
-Admin Mode:
+### Admin Mode:
 1. Switch flipped from logic '0' to logic '1' to access Admin mode.
 2. Admin will be prompted to key in passcode (actual passcode:1234)
 >>condition 1 : When user fails to key in correct passcode, user will be prompted to key in passcode again
@@ -75,20 +75,20 @@ Admin Mode:
                 >> Admin can edit stock from herre
 3. If there's a condition where user wants to retype passcode, they can press the '*' button to key in code again.
 
-Remote Access: 
+### Remote Access: 
 1. DHT11 sensor monitors temperature value in vending machine
 2. If the temperature of the internals of the vending machines falls below predefined thresholds, (e.g., 2°C–8°C for cold drinks), email will be sent to technician to alert them.
 
-Burglar detection:
+### Burglar detection:
 1. IR sensor detects for tampering and unauthorized detection.
 2. When the IR sensor detects something, Buzzer will ring for 10 seconds
 3. camera will capture image of burglar and send it the telegram bot
 
-Shaking of vending machine(security reasons):
+### Shaking of vending machine(security reasons):
 1. When the Vending machine is being shaken vigorously, the buzzer will beep for 5 seconds,
 2. camera will capture image of burglar and send it to telegram bot.
 
-Math quiz game(fun factor):
+### Math quiz game(fun factor):
 1. After user has purchased a drink, vending machine will ask users if they would like to play a minigame to win a drink
 if user selects yes:
     >>quiz starts:
@@ -97,7 +97,7 @@ if user selects yes:
 if user selectes No:
     >> Machine goes to low power mode.
 
-Payment method for physical payment:
+### Payment method for physical payment:
 1.User will be prompted if they would like to pay using QR code or via Card
     condition 1: When user selects QR code
         >> QR code will pop up and users will scan it to make payment
@@ -108,7 +108,7 @@ Payment method for physical payment:
    When payment unsuccesful: "Payment unsuccessful" will be shown and users will be prompted to tap card on rfid reader again.
 
 
-Power Management(for energy efficiency, sustainability purposes)
+### Power Management(for energy efficiency, sustainability purposes)
 High power mode conditions(when initial state in low power mode):
 1.When a key is pressed
 2.When Ultrasound sensor detects somebody
@@ -117,6 +117,8 @@ Low power mode condirions(when initial state in high power mode):
 2. When Ultrasound detects no one for 3 mins
 3. When power off option ('0') is selected in main menu
 4. After one ordering cycle and user does not want to play math game.
+
+[Hardware Demo -overall](https://youtu.be/zV3Q49fJq1w)
 
 ## Running the Website
 

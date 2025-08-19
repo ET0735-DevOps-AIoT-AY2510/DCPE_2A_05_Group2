@@ -72,26 +72,6 @@ def _capture_image_once() -> Optional[str]:
     except Exception as e:
         print(f"[CAM] capture failed: {e}")
         return None
-    finally:
-        try:
-            if cam:
-                cam.stop()
-        except Exception:
-            pass
-        try:
-            if cam:
-                cam.close()
-        except Exception:
-            pass
-
-def capture_image(retries: int = 3, delay_s: float = 0.5) -> Optional[str]:
-    """Try to capture with a few quick retries (handles ‘camera busy’ races)."""
-    for attempt in range(1, retries + 1):
-        path = _capture_image_once()
-        if path:
-            return path
-        time.sleep(delay_s)
-    return None
 
 # ============
 # HELPERS

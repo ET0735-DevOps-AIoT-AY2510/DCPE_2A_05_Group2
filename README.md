@@ -230,6 +230,7 @@ kubectl apply -f <your_yaml_file>.yml
 - Switch to Admin/User (Switch)
 - Physical Payment (RFID)
 - Online Payment (QR Generation Popup)
+- Collection mode (PiCam)
 - Dictionary for Database + Utilities for Database (Code)
 - Integration for all sprints + merging
 

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %} Payment Successful {% endblock %}
+
+{% block content %}
+
+<!-- Home Icon Button -->
+<div class="home-icon">
+    <form action="/cart/clear" method="POST">
+        <button type="submit" class="btn btn-light shadow-sm" style="border-radius: 50%; padding: 0.5rem;">
+            <img src="{{ url_for('static', filename='images/home_icon.svg') }}" alt="Home" style="width: 40px; height: 40px;">
+        </button>
+    </form>
+</div>
+
+
+
+<div class="container text-center mt-5">
+    <h2 class="text-success fw-bold mb-4">✅ Payment Successful!</h2>
+    <p class="mb-4">Tap the image below to show the QR code to the vending machine.</p>
+
+    <div class="flip-card" id="flipCard">
+        <div class="flip-card-inner">
+            <div class="flip-card-front">
+                <img src="{{ url_for('static', filename='images/vending-machine.png') }}" alt="Vending Machine Image">
+            </div>
+            <div class="flip-card-back">
+                <img src="{{ url_for('static', filename=qr_filename) }}" alt="User QR Code">
+            </div>
+        </div>
+    </div>
+
+    <div class="message mt-4">Enjoy your drink! ☕</div>
+
+    <form action="/" method="GET">
+        <button 
+            id="qrScanBtn"
+            type="submit"
+            class="btn btn-primary mt-4 px-4 py-2 shadow"
+            style="border-radius: 12px; font-size: 1.1rem;"
+        >
+            Drinks have been recieved 
+        </button>
+    </form>
+
+</div>
+
+{% endblock %}

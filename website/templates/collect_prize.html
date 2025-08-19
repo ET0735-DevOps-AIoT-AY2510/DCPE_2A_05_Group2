@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %} 🎁 Collect Your Prize! {% endblock %}
+
+{% block content %}
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    overflow: hidden; /* Prevent scrolling */
+    background: linear-gradient(135deg, #f093fb, #f5576c);
+    color: #fff;
+    font-family: 'Arial', sans-serif;
+    touch-action: none; /* Prevent touch scrolling */
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translate(-50%, -40%); }
+    to { opacity: 1; transform: translate(-50%, -50%); }
+  }
+
+  /* Small screens */
+  @media (max-width: 480px) {
+    .winner-card h3 { font-size: 1.2rem; }
+    .celebration-container h1 { font-size: 1.6rem; }
+    .scratch-card-container { max-width: 280px; }
+  }
+</style>
+
+<!-- Home Button -->
+<a href="/" class="home-btn-c">
+  <img src="{{ url_for('static', filename='images/home_icon.svg') }}" alt="Home">
+</a>
+
+<div class="celebration-container">
+  <h1 class="mb-4 fw-bold">🎉 Congratulations, {{ user.name }}! 🎉</h1>
+  <p class="lead mb-4">You’ve successfully won a mystery gift! Well done, <strong>{{ user.name }}</strong>! Please scan the QR code to collect your reward </p>
+
+  <div class="winner-card">
+    <h3 class="mb-3">Scratch to Reveal Your Prize 🎁</h3>
+    <div class="scratch-card-container">
+      <img src="{{ url_for('static', filename='images/airpod_pro_3.png') }}" class="gift-image" alt="AirPods Pro 3">
+      <canvas id="scratch-card"></canvas>
+    </div>
+  </div>
+
+
+</div>
+
+<canvas id="confetti-canvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;"></canvas>
+
+<script>
+  // Lock scrolling and disable pull-to-refresh
+  document.body.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+  document.addEventListener('gesturestart', e => e.preventDefault()); // Prevent zooming on iOS
+</script>
+{% endblock %}

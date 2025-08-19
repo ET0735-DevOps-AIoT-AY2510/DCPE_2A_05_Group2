@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %} Checkout {% endblock %}
+
+{% block content %}
+<style>
+</style>
+
+<a href="/">
+    <img src="{{ url_for('static', filename='images/home_icon.svg') }}" alt="Home" class="home-icon">
+</a>
+
+<div class="payment-container mt-5">
+    <h2 class="text-center text-primary fw-bold mb-4">💳 Payment Methods</h2>
+
+    <div class="payment-methods">
+        <button id="paynowBtn" class="btn btn-outline-primary">PayLah</button>
+        <button id="creditCardBtn" class="btn btn-outline-primary">Credit Card</button>
+    </div>
+
+    <!-- PayLah QR Code -->
+    <div id="qrCodeSection" class="qr-code text-center">
+        <p class="mb-3 text-muted">Scan this QR code using your banking app:</p>
+        <img src="{{ url_for('static', filename='images/paylah_qr.png') }}" alt="PayNow QR" class="img-fluid" style="max-width: 300px;">
+    </div>
+
+    <!-- Credit Card Form -->
+    <div id="creditCardSection" class="credit-card-form">
+        <form>
+            <div class="form-group">
+                <i class="bi bi-credit-card-fill"></i>
+                <input type="text" class="form-control" placeholder="Card Number">
+            </div>
+            <div class="form-group">
+                <i class="bi bi-person-fill"></i>
+                <input type="text" class="form-control" placeholder="Cardholder Name">
+            </div>
+            <div class="form-group d-flex gap-3">
+                <input type="text" class="form-control" placeholder="MM/YY">
+                <input type="text" class="form-control form-control-cvv" placeholder="CVV">
+            </div>
+        </form>
+    </div>
+
+    <div class="text-center mt-4">
+        <a href="/product-details/payment-success">
+            <button class="btn btn-primary btn-lg px-5 shadow-sm" type="submit">
+                Pay
+            </button>
+        </a>
+    </div>
+
+</div>
+
+<script>
+</script>
+{% endblock %}

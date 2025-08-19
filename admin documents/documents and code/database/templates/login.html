@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %} User Login {% endblock %}
+
+{% block content %}
+<div class="position-absolute top-0 start-0 m-4">
+    <!-- Home Button -->
+    <a href="/" class="btn btn-light shadow-sm" style="border-radius: 50%; padding: 0.5rem;">
+        <img src="{{ url_for('static', filename='images/home_icon.svg') }}" alt="Home" style="width: 24px; height: 24px;">
+    </a>
+
+        <!-- Staff Login Button -->
+    <a href="/staff/login" class="btn btn-light shadow-sm" style="border-radius: 50%; padding: 0.5rem; margin-left: 8px;">
+        <img src="{{ url_for('static', filename='images/user-staff.png') }}" alt="Home" style="width: 24px; height: 24px;">
+    </a>
+
+</div>
+
+
+<div class="d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+    <form action="" method="POST" 
+          class="p-4 shadow rounded-4" 
+          style="width: 100%; max-width: 400px; background-color: #ffffff; border-radius: 25px;">
+        
+        <h3 class="text-center mb-4">Login</h3>
+
+        <div class="form-group mb-3">
+            <label for="email">Email Address</label>
+            <input type="email" class="form-control" id="email" name="email" placeholder="Enter email">
+        </div>
+
+        <div class="form-group mb-4">
+            <label for="password">Password</label>
+            <input type="password" class="form-control" id="password" name="password" placeholder="Enter password">
+        </div>
+
+        <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-primary">Login</button>
+            <a href="/login/new-accounts" class="btn btn-outline-primary">Create New Account</a>
+        </div>
+
+        <div class="text-center mt-4">
+            <a href="/logout" 
+            class="btn btn-sm d-flex flex-column align-items-center justify-content-center" 
+            style="width: 160px; padding: 0.5rem; margin: auto;">
+                <img src="{{ url_for('static', filename='images/sign_out_icon.png') }}" 
+                    alt="Sign Out" 
+                    style="width: 20px; height: 20px;">
+                <span class="mt-1" style="font-size: 0.8rem;">sign out</span>
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

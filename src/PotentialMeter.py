@@ -10,7 +10,6 @@ range_size = 1023 // 9
 def start():
     potentialmeter.init()
     LCD = lcd.lcd()
-    LCD.lcd_clear()
     return LCD
 
 def get_item_index(potential_val):

@@ -1,263 +1,181 @@
-from hal import hal_temp_humidity_sensor as temphumi
-from hal import hal_lcd
-from hal import hal_ir_sensor as ir_sensor
-from hal import hal_buzzer as buzzer
-import RPi.GPIO as GPIO
-from time import sleep
-import time
-from hal import dht11
-import threading
-from threading import Thread
 import os
+import time
 import datetime
+import threading
+from time import sleep
+from typing import Optional
+
+import RPi.GPIO as GPIO
 from PIL import Image
-from io import BytesIO
 import requests
-from picamera2 import Picamera2
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-import subprocess
 
-# ===== CONFIG =====
+from picamera2 import Picamera2
+from hal import dht11
+from hal import hal_buzzer as buzzer
+
+# ============
+# CONFIG
+# ============
+burglar_detect = threading.Event()  # set this from other modules to trigger alert
+
+# Telegram
 TOKEN = "8242655620:AAFPEAtnxfRjwPnp6J7t3kEMFSp5w94Yujw"
-chat_id = ["5043247672","-1002502383796"]
+CHAT_IDS = ["5043247672", "-1002502383796"]
 
-sender_email = "vmoperations3@gmail.com"
-password = "tucq kspl jryl brnv"
-recipient_emails = ["matinaryan06@gmail.com","shirohskates@gmail.com"]
-subject_template = "Hello, {name}!"
-body_template = """To all Vending Machine Admins,
+# Email (use an app password)
+SENDER_EMAIL = "vmoperations3@gmail.com"
+SENDER_PASS  = "tucq kspl jryl brnv"
+RECIPIENTS   = ["titussohpx@gmail.com", "spxt.24@ichat.sp.edu.sg"]
+SUBJECT      = "Vending Machine Temperature Alert"
+BODY         = (
+    "To all Vending Machine Admins,\n\n"
+    "The vending machine requires assistance as its temperature has fallen out of the optimal range.\n\n"
+    "Best regards,\n"
+    "The Team at DevOps Vending Machine\n"
+)
 
-The vending machine requires assistance as its temperature has fallen out of the optimal range.
+# Thresholds & cooldowns
+TEMP_MIN_C = 1.6
+TEMP_MAX_C = 4.4
+TEMP_EMAIL_COOLDOWN_S = 30   # avoid spamming email if temp stays bad
+BURGLAR_COOLDOWN_S     = 10  # avoid spamming telegram on repeated triggers
 
-Best regards,
-The Team at DevOps Vending Machine
-"""
-
+# Storage for captured images
 LOCAL_SAVE_PATH = "/home/pi/ET0735/burglar_images"
-if not os.path.exists(LOCAL_SAVE_PATH):
-    os.makedirs(LOCAL_SAVE_PATH)
+os.makedirs(LOCAL_SAVE_PATH, exist_ok=True)
 
-# ===== LCD =====
-lcd_display = hal_lcd.lcd()
-lcd_display.lcd_display_string("Temp Monitoring...", line=1)
+# ============
+# GLOBALS
+# ============
+dht = None
+_last_temp_email_ts = 0.0
+_last_burglar_ts    = 0.0
 
-# ===== GPIO =====
-GPIO.setmode(GPIO.BCM)
-GPIO.setwarnings(False)
-
-# ===== SERVO =====
-SERVO_PIN = 26
-GPIO.setup(SERVO_PIN, GPIO.OUT)
-servo_pwm = GPIO.PWM(SERVO_PIN, 50)
-servo_pwm.start(0)
-
-# ===== KEYPAD =====
-MATRIX = [[1, 2, 3],[4, 5, 6],[7, 8, 9],['*', 0, '#']]
-ROW = [6, 20, 19, 13]
-COL = [12, 5, 16]
-
-VALID_CODE = "1234"
-entered_code = []
-code_active = False
-door_opened = False
-temperature_paused = False
-burglar_paused = False
-cbk_func = None
-dht11_inst = None
-
-# ===== CAMERA =====
-camera = Picamera2()
-camera.preview_configuration.main.size = (640,480)
-camera.preview_configuration.main.format = "RGB888"
-camera.configure("preview")
-camera.start()
-print("Camera initialized with 640x480 RGB888")
-
-# ===== HELPER FUNCTIONS =====
-def capture_image():
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"burglar_{timestamp}.jpg"
-    filepath = os.path.join(LOCAL_SAVE_PATH, filename)
+# If other processes also use the camera, they can collide. We’ll retry quickly.
+def _capture_image_once() -> Optional[str]:
+    cam = None
     try:
-        frame = camera.capture_array()
-        img = Image.fromarray(frame)
-        img.save(filepath)
-        print(f"Image saved at {filepath}")
-        return filepath
+        cam = Picamera2()
+        cam.preview_configuration.main.size = (640, 480)
+        cam.preview_configuration.main.format = "RGB888"
+        cam.configure("preview")
+        cam.start()
+        time.sleep(0.2)  # tiny warm-up
+        frame = cam.capture_array()
+        ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        path = os.path.join(LOCAL_SAVE_PATH, f"burglar_{ts}.jpg")
+        Image.fromarray(frame).save(path, format="JPEG")
+        return path
     except Exception as e:
-        print(f"[ERROR] Camera capture failed: {e}")
+        print(f"[CAM] capture failed: {e}")
         return None
 
-def send_telegram_text(message):
-    for cid in chat_id:
+# ============
+# HELPERS
+# ============
+def send_telegram_text(msg: str):
+    for cid in CHAT_IDS:
         try:
             url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-            params = {'chat_id': cid, 'text': message}
-            resp = requests.get(url, params=params)
-            try:
-                print(f"Telegram text response for {cid}:", resp.json())
-            except Exception:
-                print(f"Telegram text raw response for {cid}:", resp.text)
+            requests.get(url, params={"chat_id": cid, "text": msg}, timeout=8)
         except Exception as e:
-            print(f"[ERROR] Telegram text failed for {cid}: {e}")
+            print(f"[TELEGRAM] text failed for {cid}: {e}")
 
-def send_telegram_image(image_path):
-    for cid in chat_id:  # support personal + group
+def send_telegram_image(image_path: str):
+    for cid in CHAT_IDS:
         try:
             with open(image_path, "rb") as f:
                 url = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
-                files = {'photo': (os.path.basename(image_path), f, 'image/jpeg')}
-                data = {'chat_id': cid}
-                resp = requests.post(url, files=files, data=data)
-
-                # Debug: prefer JSON, but fall back to raw text
-                try:
-                    print(f"Telegram image response for {cid}:", resp.json())
-                except Exception:
-                    print(f"Telegram image raw response for {cid}:", resp.text)
+                files = {"photo": (os.path.basename(image_path), f, "image/jpeg")}
+                data  = {"chat_id": cid}
+                requests.post(url, files=files, data=data, timeout=15)
         except Exception as e:
-            print(f"[ERROR] Telegram image failed for {cid}: {e}")
+            print(f"[TELEGRAM] image failed for {cid}: {e}")
 
-def send_email_alert():
-    for recipient in recipient_emails:
-        name = recipient.split("@")[0]
-        message = MIMEMultipart()
-        message["From"] = sender_email
-        message["To"] = recipient
-        message["Subject"] = subject_template.format(name=name.capitalize())
-        message.attach(MIMEText(body_template.format(name=name.capitalize()), "plain"))
-        try:
-            with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-                server.login(sender_email,password)
-                server.sendmail(sender_email,recipient,message.as_string())
-                print(f"Email sent to {recipient}")
-        except Exception as e:
-            print(f"[ERROR] Email failed: {e}")
+def send_email_alert(subject: str, body: str):
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=15) as server:
+            server.login(SENDER_EMAIL, SENDER_PASS)
+            for rcpt in RECIPIENTS:
+                msg = MIMEMultipart()
+                msg["From"] = SENDER_EMAIL
+                msg["To"]   = rcpt
+                msg["Subject"] = subject
+                msg.attach(MIMEText(body, "plain"))
+                server.sendmail(SENDER_EMAIL, rcpt, msg.as_string())
+                print(f"[EMAIL] sent to {rcpt}")
+    except Exception as e:
+        print(f"[EMAIL] failed: {e}")
 
-# ===== MONITORS =====
-def monitor_door():
-    global burglar_paused
+# ============
+# MONITORS
+# ============
+def monitor_temp():
+    """Email when temperature goes out of range (with cooldown)."""
+    global _last_temp_email_ts, dht
     while True:
-        if not burglar_paused:
-            ir_value = ir_sensor.get_ir_sensor_state()
-            if ir_value is False:
-                print("Burglar detected!")
-                send_telegram_text("Burglar Detected!")
-                image_path = capture_image()
-                if image_path:
-                    send_telegram_image(image_path)
+        try:
+            result = dht.read()
+            if result.is_valid():
+                temp = float(result.temperature)
+                hum  = float(result.humidity)
+                print(f"[TEMP] {temp:.1f}C  {hum:.1f}%")
+
+                out_of_range = (temp < TEMP_MIN_C) or (temp > TEMP_MAX_C)
+                now = time.time()
+                if out_of_range and (now - _last_temp_email_ts) >= TEMP_EMAIL_COOLDOWN_S:
+                    send_email_alert(SUBJECT, BODY)
+                    _last_temp_email_ts = now
+            else:
+                print("[TEMP] sensor error")
+        except Exception as e:
+            print(f"[TEMP] error: {e}")
         sleep(2)
 
-def init_dht_sensor():
-    global dht11_inst
-    dht11_inst = dht11.DHT11(pin=21)
+def monitor_burglar():
+    """Send Telegram alert + photo when burglar_detect is set (with cooldown)."""
+    global _last_burglar_ts
+    while True:
+        if burglar_detect.is_set():
+            now = time.time()
+            if (now - _last_burglar_ts) >= BURGLAR_COOLDOWN_S:
+                print("[BURGLAR] event detected")
+                try:
+                    buzzer.beep(0.3)
+                except Exception:
+                    pass
+                send_telegram_text("Burglar Detected!")
+                img = capture_image()
+                if img:
+                    send_telegram_image(img)
+                _last_burglar_ts = now
+            burglar_detect.clear()
+        sleep(0.2)
+
+# ============
+# ENTRY
+# ============
+def main():
+    global dht
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setwarnings(False)
+
+    dht = dht11.DHT11(pin=21)
     time.sleep(2)
 
-def monitor_temp():
-    global dht11_inst, temperature_paused
-    if dht11_inst is None:
-        init_dht_sensor()
+    threading.Thread(target=monitor_temp, daemon=True).start()
+    threading.Thread(target=monitor_burglar, daemon=True).start()
+
     while True:
-        if not temperature_paused:
-            result = dht11_inst.read()
-            if result.is_valid():
-                temp = result.temperature
-                hum = result.humidity
-                lcd_display.lcd_display_string(f"Temp:{temp:.1f}C Hum:{hum:.1f}%", line=1)
-                if temp<1.6 or temp>4.4:
-                    print("Temperature out of range!")
-                    send_telegram_text("Temperature out of range!")
-                    send_email_alert()
-        sleep(2)
+        time.sleep(1)
 
-# ===== KEYPAD & SERVO =====
-def init_keypad(cbk):
-    global cbk_func
-    cbk_func = cbk
-    for i in range(3):
-        GPIO.setup(COL[i],GPIO.OUT)
-        GPIO.output(COL[i],1)
-    for j in range(4):
-        GPIO.setup(ROW[j],GPIO.IN,pull_up_down=GPIO.PUD_UP)
-
-def get_key():
-    global cbk_func
-    while True:
-        for i in range(3):
-            GPIO.output(COL[i],0)
-            for j in range(4):
-                if GPIO.input(ROW[j])==0:
-                    cbk_func(MATRIX[j][i])
-                    while GPIO.input(ROW[j])==0:
-                        sleep(0.1)
-            GPIO.output(COL[i],1)
-
-def actuate_servo(open_door=True):
-    if open_door:
-        servo_pwm.ChangeDutyCycle(8)
-        sleep(1)
-        servo_pwm.ChangeDutyCycle(0)
-    else:
-        servo_pwm.ChangeDutyCycle(2)
-        sleep(2)
-        servo_pwm.ChangeDutyCycle(0)
-
-def on_key_press(key):
-    global entered_code, code_active, door_opened, temperature_paused, burglar_paused
-
-    if key == '#':
-        code_active = True
-        temperature_paused = True
-        burglar_paused = True
-        entered_code.clear()
-        lcd_display.lcd_display_string("Enter code:".ljust(16), line=1)
-
-    elif key == '*':
-        if door_opened:
-            lcd_display.lcd_display_string("Door Closing".ljust(16), line=1)
-            actuate_servo(open_door=False)
-            door_opened = False
-        temperature_paused = False
-        burglar_paused = False
-        sleep(2)
-
-    elif code_active and str(key).isdigit():
-        if len(entered_code)<4:
-            entered_code.append(str(key))
-            lcd_display.lcd_display_string(f"Enter code:{''.join(entered_code):<4}", line=1)
-            if len(entered_code)==4:
-                code = ''.join(entered_code)
-                if code==VALID_CODE:
-                    lcd_display.lcd_display_string("Access Granted!".ljust(16), line=1)
-                    actuate_servo(open_door=True)
-                    door_opened=True
-                    # Resume temperature display immediately
-                    temperature_paused = False
-                    burglar_paused = False
-                else:
-                    lcd_display.lcd_display_string("Wrong Code!".ljust(16), line=1)
-                    sleep(1)
-                entered_code.clear()
-                code_active=False
-
-
-# ===== MAIN =====
-def main():
-    ir_sensor.init()
-    buzzer.init()
-    Thread(target=monitor_door, daemon=True).start()
-    Thread(target=monitor_temp, daemon=True).start()
-    init_keypad(on_key_press)
-    Thread(target=get_key, daemon=True).start()
-    while True:
-        sleep(1)
-
-try:
-    main()
-except KeyboardInterrupt:
-    print("\nShutting down...")
-finally:
-    servo_pwm.stop()
-    GPIO.cleanup()
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nShutting down...")
+    finally:
+        GPIO.cleanup()

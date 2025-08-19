@@ -30,7 +30,7 @@ Once logged in, staff can:
 - Modify drink details such as **price**, **name**, and **stock level**.
 - Add new staff accounts to the database to delegate maintenance duties.
 
-[YouTube Demo – Staff Side](_link_to_video_here_)
+[Project Demo – Staff Side](https://drive.google.com/file/d/1F3T52a-qFDyR8ml4HQwUIk_j81i8nhAm/view?usp=drive_link)
 
 
 
@@ -48,7 +48,7 @@ The primary goal is to allow customers to purchase drinks via the website.
 3. Customer scans the QR code at the vending machine’s Pi camera.
 4. The vending machine verifies the code and dispenses the drink.
 
-[YouTube Demo – Main System](_link_to_video_here_)
+[Project Demo – Main System](https://drive.google.com/file/d/1F3ghRg9FW2_wOZbbqDkroqWgERMRdN-q/view?usp=drive_link)
 
 
 
@@ -58,16 +58,8 @@ The website includes an **interactive math quiz** with the following rules:
 - **Time limit** – Each quiz session lasts for a maximum of 2 minutes.
 - **Reward system** – Upon successful completion, the player receives a small incentive, with collection details sent via email.
 
-[YouTube Demo – Game](_link_to_video_here_)
+[YouTube Demo – Game](https://drive.google.com/file/d/1FSfaKCaYUKysUuDTu9PEJMXmDsHMvx0O/view?usp=drive_link)
 
-
-
-### Staff Access Features
-- Add or remove drinks from the menu.
-- Modify drink attributes (price, name, stock).
-- Register new staff members in the database.
-
-[YouTube Demo – Staff Features](_link_to_video_here_)
 
 
 

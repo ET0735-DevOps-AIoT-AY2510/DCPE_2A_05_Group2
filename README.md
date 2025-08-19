@@ -39,7 +39,6 @@ Once logged in, staff can:
 ### Tech Stack
 <img width="557" height="505" alt="image" src="https://github.com/user-attachments/assets/13d1555b-a09e-43e6-9bb1-d29f8a458e6d" />
 
-*(Tech stack diagram placeholder)*
 
 ### Main Purpose
 The primary goal is to allow customers to purchase drinks via the website.  
@@ -127,7 +126,7 @@ Low power mode condirions(when initial state in high power mode):
 To run the website on a Raspberry Pi using Docker:
 
 ```bash
-docker run -p 5000:5000 chunhoesdocker/raspberrypi
+docker run -p 5000:5000 chunhoesdocker/mini_project
 ```
 
 ### Option 2 – Via Kubernetes
@@ -160,22 +159,22 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ecommerce-website-deployment
+  name: chunhoesdocker/mini_project
   labels:
-    app: ecommerce-website
+    app: mini_project
 spec:
   replicas: 5
   selector:
     matchLabels:
-      app: ecommerce-website
+      app: mini_project
   template:
     metadata:
       labels:
-        app: ecommerce-website
+        app: mini_project
     spec:
       containers:
-        - name: ecommerce-website
-          image: chunhoesdocker/ecommerce_website:latest
+        - name: mini_project
+          image:chunhoesdocker/mini_project:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 5000
@@ -190,10 +189,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: ecommerce-website-service
+  name: mini_project-service
 spec:
   selector:
-    app: ecommerce-website
+    app: mini_project
   ports:
     - protocol: TCP
       port: 5000

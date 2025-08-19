@@ -35,19 +35,17 @@
 
 <div class="celebration-container">
   <h1 class="mb-4 fw-bold">🎉 Congratulations, {{ user.name }}! 🎉</h1>
-  <p class="lead mb-4">You’ve successfully won a mystery gift! Your reward will be sent to <strong>{{ user.email }}</strong>.</p>
+  <p class="lead mb-4">You’ve successfully won a mystery gift! Well done, <strong>{{ user.name }}</strong>! Please scan the QR code to collect your reward </p>
 
   <div class="winner-card">
     <h3 class="mb-3">Scratch to Reveal Your Prize 🎁</h3>
     <div class="scratch-card-container">
-      <img src="{{ url_for('static', filename='images/airpod_pro_3.jpeg') }}" class="gift-image" alt="AirPods Pro 3">
+      <img src="{{ url_for('static', filename='images/airpod_pro_3.png') }}" class="gift-image" alt="AirPods Pro 3">
       <canvas id="scratch-card"></canvas>
     </div>
   </div>
 
-  <div class="mb-5">
-    *The collection details will be sent to your email address
-  </div>
+
 </div>
 
 <canvas id="confetti-canvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;"></canvas>

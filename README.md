@@ -58,7 +58,7 @@ The website includes an **interactive math quiz** with the following rules:
 - **Time limit** – Each quiz session lasts for a maximum of 2 minutes.
 - **Reward system** – Upon successful completion, the player receives a small incentive, with collection details sent via email.
 
-[YouTube Demo – Game](https://drive.google.com/file/d/1FSfaKCaYUKysUuDTu9PEJMXmDsHMvx0O/view?usp=drive_link)
+[Project Demo – Game](https://drive.google.com/file/d/1FSfaKCaYUKysUuDTu9PEJMXmDsHMvx0O/view?usp=drive_link)
 
 
 

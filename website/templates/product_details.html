@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %} Product Details {% endblock %}
+
+{% block content %}
+<!-- Home button -->
+<div class="position-absolute top-0 start-0 m-4">
+    <a href="/" class="btn btn-light rounded-circle shadow-sm p-2" style="width: 44px; height: 44px;">
+        <img src="{{ url_for('static', filename='images/home_icon.svg') }}" alt="Home" style="width: 100%; height: 100%; object-fit: contain;">
+    </a>
+</div>
+
+<div class="container py-5 position-relative">
+
+    <div class="row justify-content-center">
+        <div class="col-lg-10 col-xl-8">
+
+            <!-- Page Title -->
+            <div class="text-center mb-5">
+                <h2 class="fw-bold text-primary">🧾 Order Summary</h2>
+                <p class="text-muted">Here’s a breakdown of your order</p>
+            </div>
+
+            {% if cart_items %}
+            <!-- Product Table -->
+            <div class="table-responsive shadow-sm rounded">
+                <table class="table table-hover align-middle bg-white">
+                    <thead class="table-primary">
+                        <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">Item Name</th>
+                            <th scope="col">Quantity</th>
+                            <th scope="col">Unit Price ($)</th>
+                            <th scope="col">Subtotal ($)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% set total = 0 %}
+                        {% set grouped_items = {} %}
+
+                        {% for item in cart_items %}
+                            {% if grouped_items[item.name] %}
+                                {% set _ = grouped_items[item.name].update({
+                                    'quantity': grouped_items[item.name].quantity + item.quantity
+                                }) %}
+                            {% else %}
+                                {% set _ = grouped_items.update({item.name: item}) %}
+                            {% endif %}
+                        {% endfor %}
+
+                        {% for name, item in grouped_items.items() %}
+                            {% set subtotal = item.price * item.quantity %}
+                            {% set total = total + subtotal %}
+                            <tr>
+                                <th scope="row">{{ loop.index }}</th>
+                                <td>{{ name }}</td>
+                                <td>{{ item.quantity }}</td>
+                                <td>${{ "%.2f"|format(item.price) }}</td>
+                                <td class="fw-semibold">${{ "%.2f"|format(subtotal) }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Total Cost Section -->
+            <div class="text-end mt-4">
+                <h4 class="fw-bold text-primary">Total Cost: ${{ "%.2f"|format(order_total) }}</h4>
+            </div>
+
+            <!-- Checkout Button -->
+            <div class="text-center mt-4">
+                <a href="/product-details/checkout" class="btn btn-light btn-lg shadow">
+                    <img src="{{ url_for('static', filename='images/checkout-icon.webp') }}" alt="Checkout" style="width: 24px; height: 24px; margin-right: 10px;">
+                      Proceed to Pay
+                </a>
+            </div>
+
+            {% else %}
+            <div class="text-center text-muted fs-5 mt-5">
+                No items found in your order 🥲
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

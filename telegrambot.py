@@ -1,7 +1,7 @@
 from PIL import Image
 from io import BytesIO
 import requests
-TOKEN = "8242655620:AAFPEAtnxfRjwPnp6J7t3kEMFSp5w94Yujw"
+TOKEN = ""
 chat_id = "5043247672"
 message = "Vending Machine requires maintainance!"
 url = f"https://api.telegram.org/bot{TOKEN}/sendMessage?chat_id={chat_id}&text={message}"
